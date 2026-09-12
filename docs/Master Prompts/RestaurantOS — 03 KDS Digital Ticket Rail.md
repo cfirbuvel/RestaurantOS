@@ -42,17 +42,19 @@ Each ticket displays:
 
 # STATUS FLOW
 
-New
-→ In Preparation
-→ Ready
+MANDATORY ARCHITECTURAL RULE (PHASE 00 Section 26):
+The KDS lifecycle describes food preparation, NEVER delivery or driver movement.
+KDS must not use Delivery status as its source of truth.
 
-Optional future stations:
+Canonical KDS Preparation Lifecycle:
+- `QUEUED`
+- `STARTED`
+- `READY`
+- `COMPLETED`
+(Fallback/Correction: `RECALLED`)
 
-Preparation
-→ Cooking
-→ Assembly
-→ Packing
-→ Ready
+Event-Driven Relationship to Logistics:
+When food becomes `READY` (`OrderReady`), an associated delivery order transitions to `AVAILABLE_FOR_ASSIGNMENT`.
 
 ---
 
@@ -70,7 +72,7 @@ Large touch-friendly controls.
 
 ---
 
-# TIMING
+# TIMING & KDS SLA MODEL (PHASE 00 Section 27)
 
 Track:
 
@@ -79,7 +81,17 @@ Track:
 - station time
 - total kitchen time
 
-Show warning thresholds.
+SLA Visualization States:
+1. `NORMAL`: Standard header and timer.
+2. `NEAR_SLA`: Amber warning tint and icon.
+3. `SLA_EXCEEDED`:
+   - Full red header
+   - White text
+   - Very large elapsed timer (e.g., `+00:37`)
+   - Warning icon
+   - Subtle pulse
+   - Must be clearly readable from 1.5–2 meters away.
+   - Do NOT introduce decorative animations that reduce operational clarity.
 
 ---
 
@@ -105,17 +117,13 @@ Packing
 
 ---
 
-# REAL-TIME
+# REAL-TIME & WEBSOCKET SECURITY (PHASE 00 Sections 28-29)
 
-KDS must update in real time.
+KDS must update in real time with strict security:
 
-Handle:
-
-- reconnect
-- duplicate events
-- stale tickets
-- browser refresh
-- network failure
+- Authenticate using ephemeral WebSocket connection tickets (`POST /api/v1/realtime/ticket` with 60s TTL; never long-lived tokens in query strings).
+- Strict channel authorization boundary: KDS only subscribes to kitchen events for its assigned branch (`kds:{branch_id}`).
+- Handle reconnect, duplicate events, stale tickets, browser refresh, and network recovery gracefully.
 
 ---
 

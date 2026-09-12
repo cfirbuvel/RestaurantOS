@@ -1,58 +1,133 @@
-# RestaurantOS — Phase 4: Delivery Management & Learning-Based Optimization Foundation
+# RestaurantOS — Phase 4: Delivery, Driver Queue, Fleet Tracking & Smart Batching
 
-Build the complete delivery management module.
+Build the complete delivery management, driver availability queue, fleet tracking, and smart batching module.
 
 IMPORTANT:
 
 Generation 1 is HUMAN OPERATED.
 
-The system may recommend delivery batches, but a manager must approve them.
+The system may recommend delivery batches and assignments, but a human manager must approve them.
 
 Do NOT allow autonomous AI decisions in Generation 1.
 
 ---
 
-# DELIVERY MANAGEMENT
+# DELIVERY MANAGEMENT (PHASE 00 Section 4)
 
 Implement:
 
-- delivery orders
+- delivery orders (decoupled from Universal Orders)
 - delivery zones
 - addresses
-- drivers
-- driver availability
-- driver status
-- driver assignment
+- drivers & vehicles
+- driver availability queue (`available_since ASC`)
+- driver multidimensional state
+- driver assignment & self-assignment
 - delivery batches
 - dispatch
 - delivery status
 - estimated delivery time
 - SLA tracking
-- delivery history
+- delivery history & decision logs
 
 ---
 
-# DRIVER STATES
+# DRIVER MULTIDIMENSIONAL STATE MODEL (PHASE 00 Section 6)
 
-Available
-Busy
-Offline
-OnBreak
-Returning
+Do NOT encode unrelated concepts into one giant enum. Separate these conceptual dimensions:
+
+## 1. Shift Status
+- `OFF_SHIFT`
+- `ON_SHIFT`
+- `BREAK`
+
+## 2. Assignment Status
+- `AVAILABLE`
+- `ASSIGNED`
+
+## 3. Trip Status
+- `NOT_STARTED`
+- `IN_TRANSIT`
+- `AT_CUSTOMER`
+- `RETURNING`
 
 ---
 
-# DELIVERY STATES
+# DRIVER AVAILABILITY QUEUE & RETURN SEMANTICS (PHASE 00 Sections 7 & 8)
 
-Waiting
-Preparing
-Ready
-Assigned
-Dispatched
-OutForDelivery
-Delivered
-Failed
-Cancelled
+- Queue priority is strictly derived from `available_since ASC`.
+- Never store queue position as the primary source of truth.
+- Disambiguate return events:
+  - `POST /drivers/me/return-from-break` emits `DriverReturnedFromBreak`.
+  - `POST /drivers/me/arrived-at-restaurant` emits `DriverReturnedToRestaurant`.
+  These are distinct domain events and must never be treated as the same event.
+
+---
+
+# CANONICAL DELIVERY LIFECYCLE (PHASE 00 Section 4)
+
+Independent delivery state machine:
+
+- `WAITING`
+- `PREPARING`
+- `READY`
+- `AVAILABLE_FOR_ASSIGNMENT`
+- `ASSIGNED`
+- `PICKED_UP`
+- `OUT_FOR_DELIVERY`
+- `ARRIVED_AT_CUSTOMER_AREA`
+- `DELIVERED`
+Terminal Failure/Abort:
+- `FAILED`
+- `CANCELLED`
+
+Crucial Release Rule:
+When a delivery is released before pickup (`POST /deliveries/:id/release`), it returns to `AVAILABLE_FOR_ASSIGNMENT`.
+
+---
+
+# DELIVERY DOMAIN COMMANDS (PHASE 00 Section 5)
+
+Replace generic CRUD status mutations (`PATCH /deliveries/:id/status`) with explicit domain commands:
+
+- `POST /deliveries/:id/assign`
+- `POST /deliveries/:id/self-assign`
+- `POST /deliveries/:id/release`
+- `POST /deliveries/:id/pickup`
+- `POST /deliveries/:id/start`
+- `POST /deliveries/:id/arrive`
+- `POST /deliveries/:id/complete`
+- `POST /deliveries/:id/fail`
+- `POST /deliveries/:id/cancel`
+
+All assignment operations must be atomic, tenant/branch scoped, race-condition safe, and audited.
+
+---
+
+# DRIVER SELF-ASSIGNMENT (PHASE 00 Section 9)
+
+- Per-driver permission configurable by manager.
+- Atomic assignment where only one driver can claim an eligible delivery.
+- Audit assignment source: `MANAGER`, `DRIVER_SELF_ASSIGN`, `SYSTEM_RECOMMENDATION`.
+
+---
+
+# FLEET TRACKING & TELEMATICS DOMAIN (PHASE 00 Sections 14-25 & ADR 0009)
+
+1. **Vehicle as First-Class Domain:** `id`, `tenant_id`, `branch_id`, `vehicle_type` (`BIKE`, `SCOOTER`, `SMALL_CAR`, `MEDIUM_CAR`, `LARGE_VAN`, `TRUCK`), `license_plate`, `capacity`, `status`.
+2. **Driver ↔ Vehicle Assignment:** Temporal relation `DriverVehicleAssignment` (`driver_id`, `vehicle_id`, `assigned_at`, `unassigned_at`).
+3. **Tracker as First-Class Domain:** IoT device representation `Tracker` (`id`, `provider`, `external_device_id`, `battery_level`, `status`).
+4. **Vehicle ↔ Tracker Assignment:** Temporal relation `VehicleTrackerAssignment`.
+5. **VehicleLocation & Trips:**
+   - Partitioned `vehicle_locations` table (`recorded_at` vs `received_at`, coordinates, speed, heading).
+   - `vehicle_trips` linking vehicle movement to an optional delivery.
+6. **Geofencing:** Branch and customer geofences emitting `VehicleEnteredRestaurantGeofence`, `VehicleExitedRestaurantGeofence`, `VehicleEnteredCustomerGeofence`, etc.
+7. **Primary vs Secondary Tracking (PHASE 00 Section 19):**
+   - GPS + Cellular/LTE is primary operational fleet tracking.
+   - AirTag/Find My devices are secondary anti-theft only; never primary operational telemetry.
+8. **CORE ARCHITECTURAL RULE — TELEMETRY $\neq$ BUSINESS TRUTH (PHASE 00 Section 23):**
+   - `VehicleEnteredCustomerGeofence` triggers `ARRIVED_AT_CUSTOMER_AREA`.
+   - Telemetry GPS arrival must NEVER automatically trigger `DELIVERED` without driver/human confirmation! Delivery completion remains a business workflow event.
 
 ---
 
@@ -376,19 +451,23 @@ Simulate:
 
 ---
 
-# SECURITY
+# SECURITY & PRIVACY (PHASE 00 Sections 31 & 42)
 
 Protect:
 
 - driver personal information
-- customer addresses
-- delivery notes
-- phone numbers
-- location information
+- customer addresses and delivery notes
+- telemetry and GPS coordinates
 
-Enforce role permissions.
+Driver Data Minimization:
+- Couriers MUST ONLY receive `DeliveryViewDTO`.
+- Do NOT expose entire Customer CRM entities, historical spending, or unrelated orders to a driver.
 
-Drivers should only see the information necessary to perform their assigned deliveries.
+Fleet Telemetry Privacy & Data Minimization:
+- Collect vehicle telemetry strictly during active driver shifts (`ON_SHIFT`).
+- Telemetry retention is limited to a 30-day rolling window with automated partitioning.
+- Track vehicles operationally; never use telemetry as an unrestricted employee surveillance mechanism.
+- Enforce tenant and branch isolation at the database, service, and WebSocket channel layers.
 
 ---
 

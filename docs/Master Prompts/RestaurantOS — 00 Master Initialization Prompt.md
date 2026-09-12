@@ -123,33 +123,36 @@ The architecture must account for:
 15. Orders
 16. Payments
 17. Delivery
-18. Drivers
-19. Delivery batching
-20. Kitchen Display System
-21. Telephony
-22. Website ordering
-23. Kiosk
-24. Inventory
-25. Warehouse
-26. Suppliers
-27. Purchasing
-28. Recipes / BOM
-29. Stock movements
-30. Waste
-31. Campaigns
-32. Promotions
-33. Coupons
-34. Loyalty
-35. Analytics
-36. Reporting
-37. Notifications
-38. Integrations
-39. Audit logs
-40. System settings
-41. Restaurant settings
-42. Feature flags
-43. Billing/subscriptions
-44. Future AI / Intelligence layer
+18. Drivers & Driver Availability Queue
+19. Delivery Batching
+20. Kitchen Display System (KDS)
+21. Vehicles (Fleet & Telematics)
+22. Trackers (Fleet & Telematics)
+23. Fleet Telemetry & Geofencing (Fleet & Telematics)
+24. Telephony
+25. Website Ordering
+26. Kiosk
+27. Inventory
+28. Warehouse
+29. Suppliers
+30. Purchasing
+31. Recipes / BOM
+32. Stock Movements
+33. Waste Tracking
+34. Campaigns
+35. Promotions
+36. Coupons
+37. Loyalty
+38. Analytics
+39. Reporting
+40. Notifications
+41. Integrations Hub
+42. Audit Logs
+43. System Settings
+44. Restaurant Settings
+45. Feature Flags
+46. Billing / Subscriptions
+47. Future AI / Intelligence Layer
 
 ---
 

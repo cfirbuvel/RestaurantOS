@@ -87,26 +87,56 @@ Normalize them into the RestaurantOS order model.
 
 # ORDER STATES
 
-Implement a robust state machine.
+MANDATORY ARCHITECTURAL RULE (PHASE 00 Section 3):
+Do NOT use one status machine for both Orders and Deliveries. They are separate domain concepts.
 
-Example:
+Canonical Universal Order Lifecycle:
+- DRAFT
+- CONFIRMED
+- ACCEPTED
+- IN_PREPARATION
+- READY
+- COMPLETED
+Terminal:
+- CANCELLED
+- FAILED
 
-Draft
-Confirmed
-Accepted
-InPreparation
-Ready
-Assigned
-OutForDelivery
-Delivered
-Cancelled
-Failed
+CRITICAL CONTRACT:
+Order status represents the lifecycle of the customer purchase/kitchen order itself.
+Order status must NOT represent:
+- driver assignment
+- delivery trip
+- driver arrival
+- vehicle movement
+- delivery completion
 
-State transitions must be validated.
+Pickup, dine-in, kiosk, and counter orders must NEVER be forced into a Delivery lifecycle.
 
 ---
 
-# ORDER MANAGEMENT
+# ORDER DOMAIN COMMANDS
+
+Avoid generic CRUD status mutation (`PATCH /orders/:id/status`). Use explicit domain commands (PHASE 00 Section 5):
+
+- `POST /orders/:id/confirm`
+- `POST /orders/:id/accept`
+- `POST /orders/:id/start-preparation`
+- `POST /orders/:id/ready`
+- `POST /orders/:id/complete`
+- `POST /orders/:id/cancel`
+
+For every command enforce:
+- authorization
+- valid source states
+- resulting state
+- actor
+- idempotency behavior
+- emitted events
+- audit requirements
+
+---
+
+# ORDER MANAGEMENT & DATA MINIMIZATION
 
 Implement:
 
@@ -118,9 +148,11 @@ Implement:
 - previous order lookup
 - notes
 - payment status
-- delivery status
-- source
-- timestamps
+- source & timestamps
+
+Data Minimization for Delivery (PHASE 00 Section 31):
+- Do NOT expose entire Customer CRM entities to drivers.
+- Provide a restricted `DeliveryViewDTO` containing only operational information: customer display name, delivery address, access instructions, and delivery notes.
 
 ---
 

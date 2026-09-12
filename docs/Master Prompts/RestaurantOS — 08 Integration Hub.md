@@ -2,8 +2,12 @@
 
 Build a provider-agnostic Integration Hub.
 
-Potential integrations:
+# INTEGRATION CLASSIFICATION (PHASE 00 Section 35)
 
+Classify all integrations into two distinct architectural categories:
+
+## 1. Core Business Integrations
+External sales channels and Israeli fiscal/clearing providers:
 - Wolt
 - 10bis
 - Mishloha
@@ -11,39 +15,55 @@ Potential integrations:
 - Rivhit
 - iCount
 - Meshulam
-- Stripe
-- SMS
-- WhatsApp
-- Maps
-- Telephony
-- POS systems
+
+## 2. Platform / Infrastructure Integrations
+Supporting communications, maps, telephony, and IoT telematics:
+- Stripe (Global payments)
+- Twilio / Infobip (SMS / WhatsApp)
+- Google Maps / Mapbox (Geocoding & distances)
+- FreePBX / WebRTC (Telephony)
+- **Fleet Tracker Providers (GPS / LTE hardware telematics)**
+
+External provider formats must NEVER leak into the core domain! All providers must communicate via adapters and canonical DTOs.
 
 ---
 
-# IMPORTANT
+# TRACKER PROVIDER ABSTRACTION (PHASE 00 Section 18)
 
-Do not assume external APIs exist or behave in a particular way.
-
-For every integration:
-
-1. Research/document the provider contract if credentials/documentation are available.
-2. Define an adapter.
-3. Define authentication.
-4. Define webhook handling.
-5. Define retry behavior.
-6. Define idempotency.
-7. Define error handling.
-8. Define rate limits.
-9. Define synchronization strategy.
-10. Define manual fallback.
+Do NOT hard-code a specific GPS tracker hardware vendor.
+Define an extensible adapter interface:
+- `ITrackerAdapter` (`getDeviceStatus`, `getLatestLocation`, `subscribeToTelemetry`, `processWebhook`, `normalizeTelemetry`).
+- Provide `MockTrackerAdapter` for deterministic development and automated testing.
 
 ---
 
-# NORMALIZATION
+# NORMALIZED INTEGRATION PIPELINE (PHASE 00 Section 36)
 
-External orders must become RestaurantOS orders.
+Every integration must follow the normalized pipeline:
 
-External statuses must map to internal statuses.
+```text
+Receive Webhook / Inbound Payload
+  ↓
+Verify cryptographic signature (HMAC-SHA256)
+  ↓
+Verify timestamp (5-minute replay attack tolerance)
+  ↓
+Check idempotency key / Redis lock
+  ↓
+Transform external format
+  ↓
+Universal Canonical DTO
+  ↓
+Zod Schema Validation
+  ↓
+Persist to DB inside transaction
+  ↓
+Insert to Transactional Outbox
+  ↓
+Publish Domain Event
+  ↓
+Realtime WebSocket Dispatch
+```
 
 ---
 

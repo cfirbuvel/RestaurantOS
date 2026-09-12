@@ -27,6 +27,14 @@ Implement:
 - session management
 - secure cookies
 - authentication middleware
+- ephemeral ticket-based WebSocket authentication (POST /api/v1/realtime/ticket with 60s TTL; no long-lived JWTs in query strings)
+- realtime channel authorization boundaries (KDS, Dispatch, Driver, Public Tracking, Admin)
+
+## API Response Structure
+
+Follow the canonical response contracts:
+- Single resource / action responses: `{ data, meta }` (never include meaningless pagination)
+- List responses: `{ data, pagination, meta }`
 
 ## Multi-tenancy
 

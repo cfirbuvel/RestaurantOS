@@ -28,20 +28,41 @@ Replay attacks
 
 ---
 
-# DATA SECURITY
+# DATA SECURITY & PRIVACY (PHASE 00 Sections 31 & 42)
 
 Review:
 
-- secrets
+- secrets & credentials
 - environment variables
-- logs
-- customer data
-- addresses
-- driver data
-- payment information
-- call information
+- audit logs (ensure zero credential leakage)
+- customer CRM data
+- addresses & gate codes
+- payment information (PCI-DSS tokenization; never store raw CVV/card numbers)
+- call recordings & SIP metadata
 
-Never store sensitive payment credentials unless explicitly required and properly secured.
+Driver Data Minimization (PHASE 00 Section 31):
+- Enforce `DeliveryViewDTO`: Couriers only receive delivery address, display name, and access notes.
+- Strictly block drivers from viewing customer order history, total spend, or CRM tags.
+
+Fleet Telemetry Privacy (PHASE 00 Section 42):
+- Telemetry collection is restricted to active driver shifts (`ON_SHIFT`).
+- Telemetry database retention is enforced at 30 days via automated range partitioning.
+- Strictly prohibit unrestricted personal tracking outside of working shifts.
+
+---
+
+# REALTIME WEBSOCKET SECURITY (PHASE 00 Sections 28 & 29)
+
+Audit:
+- Ephemeral single-use ticket handshake (`POST /api/v1/realtime/ticket` with 60s TTL).
+- Block long-lived JWTs in URL query strings.
+- Enforce channel authorization boundaries:
+  - `kds:{branch_id}`
+  - `dispatch:{branch_id}`
+  - `driver:{driver_id}`
+  - `vehicle_telemetry:{branch_id}`
+  - `public_tracking:{delivery_id}`
+  - `admin:{tenant_id}`
 
 ---
 

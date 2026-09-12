@@ -35,7 +35,10 @@ Orders
 Payments
 KDS
 Delivery
-Drivers
+Drivers & Driver Availability Queue
+Vehicles
+Trackers
+Fleet Telemetry & Geofencing
 Smart Batching
 Delivery Learning
 Telephony

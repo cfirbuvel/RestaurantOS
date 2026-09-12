@@ -45,15 +45,23 @@ deduct corresponding inventory quantities.
 
 ---
 
-# INVENTORY EVENTS
+# INVENTORY TIMING & DEPLETION POLICY (PHASE 00 Section 34)
 
-Sale
-→ Recipe calculation
+Inventory deduction timing must NEVER be implicit. Model it as a configurable branch/restaurant business policy:
+
+Supported Policies:
+1. `ON_ACCEPTED` (Canonical Default): Deducts inventory immediately when an order is accepted to guarantee ingredients are committed.
+2. `ON_PREPARATION_START`: Deducts inventory when kitchen begins preparing (`STARTED`).
+3. `ON_FULFILLMENT`: Deducts inventory when order is ready / delivered.
+
+Event Flow:
+Trigger (based on active policy)
+→ Recipe calculation (BOM explosion)
 → Inventory deduction
-→ Stock movement
+→ Stock movement record
 → Audit event
 
-Support rollback/correction where appropriate.
+Support automatic inventory restoration/rollback upon order cancellation where appropriate.
 
 ---
 

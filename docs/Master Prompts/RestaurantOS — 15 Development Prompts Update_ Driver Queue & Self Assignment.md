@@ -45,19 +45,24 @@
 
 ---
 
-# 1. Driver Availability
+# 1. Driver Multidimensional State Model (PHASE 00 Section 6)
 
-הרחב את מודל הנהג כך שיוכל לייצג:
+אל תדחוס מושגים שאינם קשורים ל-enum ענק אחד. הפרד את הממדים הבאים:
 
-```text
-OFF_SHIFT
-AVAILABLE
-ASSIGNED
-ON_DELIVERY
-BREAK
-```
+### Shift Status:
+- `OFF_SHIFT`
+- `ON_SHIFT`
+- `BREAK`
 
-ניתן להשתמש ב-enum קיים אם הוא מתאים.
+### Assignment Status:
+- `AVAILABLE`
+- `ASSIGNED`
+
+### Trip Status:
+- `NOT_STARTED`
+- `IN_TRANSIT`
+- `AT_CUSTOMER`
+- `RETURNING`
 
 אין ליצור duplicate status systems.
 
