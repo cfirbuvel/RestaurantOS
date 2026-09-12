@@ -92,6 +92,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
   return (
     <div
       id={id || `status-badge-${status.toLowerCase()}`}
+      data-status={status}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-bold leading-none select-none ${config.bg} ${config.border} ${config.text} ${className}`}
       dir="rtl"
     >

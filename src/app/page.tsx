@@ -134,7 +134,7 @@ export default function HomePage() {
                   <td className="py-2.5 px-3 font-bold text-emerald-600">POST</td>
                   <td className="py-2.5 px-3">/api/v1/auth/pin-login</td>
                   <td className="py-2.5 px-3 font-sans">החלפת עובדים מהירה בטרמינל עם קוד PIN</td>
-                  <td className="py-2.5 px-3 font-sans">5 נסיונות $\rightarrow$ נעילה ל-15 דקות</td>
+                  <td className="py-2.5 px-3 font-sans">5 נסיונות ← נעילה ל-15 דקות</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-bold text-blue-600">GET</td>
