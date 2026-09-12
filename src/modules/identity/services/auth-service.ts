@@ -354,15 +354,22 @@ export class AuthService {
   async setUserPin(userId: string, pin: string): Promise<void> {
     const hash = await UserSecurity.hashPin(pin);
     if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const user = memoryDb.findById("users", userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
       memoryDb.update("users", userId, { pin_code_hash: hash, pin_failed_attempts: 0, pin_locked_until: null });
       return;
     }
 
     const pool = getPostgresPool();
-    await pool.query(
+    const res = await pool.query(
       "UPDATE users SET pin_code_hash = $1, pin_failed_attempts = 0, pin_locked_until = NULL WHERE id = $2",
       [hash, userId]
     );
+    if (res.rowCount === 0) {
+      throw new Error("User not found");
+    }
   }
 
   async validateSession(token: string): Promise<Session | null> {

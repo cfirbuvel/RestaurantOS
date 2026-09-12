@@ -125,8 +125,16 @@ export class MemoryDatabase {
   }
 }
 
-// Global in-memory DB singleton for testing
-export const memoryDb = new MemoryDatabase();
+// Global in-memory DB singleton preserved across Next.js dev reloads
+const globalForDb = globalThis as unknown as {
+  memoryDb: MemoryDatabase | undefined;
+};
+
+export const memoryDb = globalForDb.memoryDb ?? new MemoryDatabase();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.memoryDb = memoryDb;
+}
 
 // Live Postgres Pool
 let pool: pg.Pool | null = null;

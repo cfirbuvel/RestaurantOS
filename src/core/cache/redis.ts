@@ -86,7 +86,15 @@ export class MockRedisClient implements CacheClient {
   }
 }
 
-export const mockRedis = new MockRedisClient();
+const globalForRedis = globalThis as unknown as {
+  mockRedis: MockRedisClient | undefined;
+};
+
+export const mockRedis = globalForRedis.mockRedis ?? new MockRedisClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForRedis.mockRedis = mockRedis;
+}
 
 let liveRedis: Redis | null = null;
 
