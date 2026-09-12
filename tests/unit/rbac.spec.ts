@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   ALL_ROLES,
+  ALL_PERMISSIONS,
+  ROLE_PERMISSIONS,
   hasPermission,
   hasAnyPermission,
   hasAllPermissions,
@@ -22,6 +24,11 @@ describe("RBAC Subsystem (12 Roles & Granular Permissions)", () => {
     expect(ALL_ROLES).toContain("MARKETING_MANAGER");
     expect(ALL_ROLES).toContain("ACCOUNTANT");
     expect(ALL_ROLES).toContain("VIEWER");
+  });
+
+  it("should define 50+ granular permissions across all operational domains", () => {
+    expect(ALL_PERMISSIONS.length).toBeGreaterThanOrEqual(50);
+    expect(ROLE_PERMISSIONS.OWNER.length).toBeGreaterThanOrEqual(50);
   });
 
   it("OWNER should possess full administrative permissions", () => {
