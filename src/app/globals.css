@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-rubik: 'Rubik', sans-serif;
+  --bg-surface: #F8F9FF;
+  --color-primary: #0F172A;
+  --color-text-main: #0B1C30;
+}
+
+html {
+  direction: rtl;
+  font-family: var(--font-rubik);
+  background-color: var(--bg-surface);
+  color: var(--color-text-main);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular numbers for prices, ticket IDs, countdown timers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+
+/* Touch targets */
+.touch-target-min {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-target-pos {
+  min-height: 52px;
+  min-width: 52px;
+}
+
+.touch-target-kds {
+  min-height: 64px;
+  min-width: 64px;
+}
