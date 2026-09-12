@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
           lastName: result.user.lastName,
         },
         organizationId: result.organizationId,
+        branchId: result.branchId,
       },
       { status: 201 }
     );

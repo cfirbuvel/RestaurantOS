@@ -33,7 +33,7 @@ export interface LoginResult {
 export class AuthService {
   private readonly SESSION_DURATION_HOURS = 24;
 
-  async registerUser(input: RegisterUserInput): Promise<{ user: User; organizationId?: string }> {
+  async registerUser(input: RegisterUserInput): Promise<{ user: User; organizationId?: string; branchId?: string }> {
     const email = input.email.toLowerCase().trim();
     const passwordHash = await UserSecurity.hashPassword(input.password);
 
@@ -55,6 +55,7 @@ export class AuthService {
       });
 
       let orgId: string | undefined;
+      let branchId: string | undefined;
       if (input.organizationName) {
         const orgSlug = input.organizationName.toLowerCase().replace(/[^a-z0-9]/g, "-");
         const orgRow = memoryDb.insert("organizations", {
@@ -65,10 +66,38 @@ export class AuthService {
         });
         orgId = orgRow.id;
 
+        const restRow = memoryDb.insert("restaurants", {
+          organization_id: orgId,
+          name: input.organizationName,
+          slug: `${orgSlug}-main`,
+          status: "ACTIVE",
+          brand_settings: {},
+        });
+
+        const branchRow = memoryDb.insert("branches", {
+          organization_id: orgId,
+          restaurant_id: restRow.id,
+          name: "סניף ראשי (Main Branch)",
+          slug: "main",
+          address: {},
+          operational_settings: { currency: "ILS", timezone: "Asia/Jerusalem" },
+          is_active: true,
+        });
+        branchId = branchRow.id;
+
         memoryDb.insert("user_organizations", {
           user_id: userRow.id,
           organization_id: orgId,
           role: "OWNER",
+        });
+
+        memoryDb.insert("user_branch_assignments", {
+          user_id: userRow.id,
+          organization_id: orgId,
+          restaurant_id: restRow.id,
+          branch_id: branchId,
+          role: "OWNER",
+          is_primary: true,
         });
       }
 
@@ -81,7 +110,7 @@ export class AuthService {
         newState: { email, firstName: input.firstName, lastName: input.lastName },
       });
 
-      return { user: this.mapUser(userRow), organizationId: orgId };
+      return { user: this.mapUser(userRow), organizationId: orgId, branchId };
     }
 
     const pool = getPostgresPool();
@@ -102,6 +131,7 @@ export class AuthService {
       const userRow = userRes.rows[0];
 
       let orgId: string | undefined;
+      let branchId: string | undefined;
       if (input.organizationName) {
         const orgSlug = input.organizationName.toLowerCase().replace(/[^a-z0-9]/g, "-");
         const orgRes = await client.query(
@@ -111,10 +141,30 @@ export class AuthService {
         );
         orgId = orgRes.rows[0].id;
 
+        const restRes = await client.query(
+          `INSERT INTO restaurants (organization_id, name, slug, status)
+           VALUES ($1, $2, $3, 'ACTIVE') RETURNING id`,
+          [orgId, input.organizationName, `${orgSlug}-main`]
+        );
+        const restId = restRes.rows[0].id;
+
+        const branchRes = await client.query(
+          `INSERT INTO branches (organization_id, restaurant_id, name, slug)
+           VALUES ($1, $2, 'סניף ראשי (Main Branch)', 'main') RETURNING id`,
+          [orgId, restId]
+        );
+        branchId = branchRes.rows[0].id;
+
         await client.query(
           `INSERT INTO user_organizations (user_id, organization_id, role)
            VALUES ($1, $2, 'OWNER')`,
           [userRow.id, orgId]
+        );
+
+        await client.query(
+          `INSERT INTO user_branch_assignments (user_id, organization_id, restaurant_id, branch_id, role, is_primary)
+           VALUES ($1, $2, $3, $4, 'OWNER', true)`,
+          [userRow.id, orgId, restId, branchId]
         );
       }
 
@@ -129,7 +179,7 @@ export class AuthService {
         newState: { email, firstName: input.firstName, lastName: input.lastName },
       });
 
-      return { user: this.mapUser(userRow), organizationId: orgId };
+      return { user: this.mapUser(userRow), organizationId: orgId, branchId };
     } catch (err) {
       await client.query("ROLLBACK");
       throw err;
