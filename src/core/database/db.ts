@@ -1,4 +1,5 @@
 import pg from "pg";
+import bcrypt from "bcryptjs";
 
 const { Pool } = pg;
 
@@ -21,6 +22,72 @@ export class MemoryDatabase {
 
   constructor() {
     this.reset();
+    if (process.env.NODE_ENV !== "test") {
+      this.seedDevData();
+    }
+  }
+
+  seedDevData() {
+    const orgId = "1b9ca808-44c7-4fec-b94f-05c133c959f0";
+    const restId = "770e8400-e29b-41d4-a716-446655440000";
+    const branchId = "be7c3e30-b28b-4d23-9d78-b56b545351f5";
+    const userId = "c0ccd37f-a43a-4365-9093-d4158ee0f749";
+
+    this.insert("organizations", {
+      id: orgId,
+      name: "Israeli Burgers",
+      slug: "israeli-burgers",
+      status: "ACTIVE",
+      settings: { currency: "ILS", timezone: "Asia/Jerusalem" },
+    });
+
+    this.insert("restaurants", {
+      id: restId,
+      organization_id: orgId,
+      name: "Israeli Burgers Main",
+      slug: "israeli-burgers-main",
+      status: "ACTIVE",
+      brand_settings: {},
+    });
+
+    this.insert("branches", {
+      id: branchId,
+      organization_id: orgId,
+      restaurant_id: restId,
+      name: "סניף ראשי (Main Branch)",
+      slug: "main",
+      address: {},
+      operational_settings: { currency: "ILS", timezone: "Asia/Jerusalem" },
+      is_active: true,
+    });
+
+    this.insert("users", {
+      id: userId,
+      email: "owner@restotest.co.il",
+      password_hash: bcrypt.hashSync("SecurePassword123!", 8),
+      pin_code_hash: bcrypt.hashSync("4567", 8),
+      first_name: "Israel",
+      last_name: "Israeli",
+      phone: "050-1234567",
+      is_active: true,
+      email_verified: true,
+      pin_failed_attempts: 0,
+    });
+
+    this.insert("user_organizations", {
+      user_id: userId,
+      organization_id: orgId,
+      role: "OWNER",
+    });
+
+    this.insert("user_branch_assignments", {
+      user_id: userId,
+      organization_id: orgId,
+      restaurant_id: restId,
+      branch_id: branchId,
+      role: "OWNER",
+      is_primary: true,
+    });
   }
 
   reset() {
@@ -130,10 +197,16 @@ const globalForDb = globalThis as unknown as {
   memoryDb: MemoryDatabase | undefined;
 };
 
-export const memoryDb = globalForDb.memoryDb ?? new MemoryDatabase();
+if (!globalForDb.memoryDb || typeof (globalForDb.memoryDb as any).seedDevData !== "function") {
+  globalForDb.memoryDb = new MemoryDatabase();
+}
+
+export const memoryDb = globalForDb.memoryDb;
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.memoryDb = memoryDb;
+  if (!memoryDb.findById("users", "c0ccd37f-a43a-4365-9093-d4158ee0f749")) {
+    memoryDb.seedDevData();
+  }
 }
 
 // Live Postgres Pool
