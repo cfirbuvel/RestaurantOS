@@ -58,6 +58,7 @@ export type Permission =
   | "kds.view"
   | "kds.bump"
   | "kds.recall"
+  | "kds.manage"
   // Delivery & Logistics
   | "delivery.read"
   | "delivery.assign"
@@ -126,6 +127,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   "kds.view",
   "kds.bump",
   "kds.recall",
+  "kds.manage",
   "delivery.read",
   "delivery.assign",
   "delivery.batch",
@@ -180,6 +182,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "kds.view",
     "kds.bump",
     "kds.recall",
+    "kds.manage",
     "delivery.read",
     "delivery.assign",
     "delivery.batch",
@@ -201,6 +204,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "kds.view",
     "kds.bump",
     "kds.recall",
+    "kds.manage",
     "recipes.read",
     "inventory.read",
     "inventory.adjust",

@@ -1,5 +1,6 @@
 import { authService, Session } from "../services/auth-service";
 import { Permission, Role, hasPermission } from "../domain/rbac";
+import { memoryDb, getPostgresPool } from "@/core/database/db";
 
 export interface AuthContext {
   session: Session;
@@ -47,11 +48,49 @@ export async function resolveAuthContext(headers: Headers | Record<string, strin
   const session = await authService.validateSession(token);
   if (!session) return null;
 
+  let branchId = session.branchId;
+
+  // If not explicitly bound to session, check x-branch-id header
+  if (!branchId) {
+    const xBranch =
+      typeof (headers as any).get === "function"
+        ? (headers as Headers).get("x-branch-id")
+        : (headers as any)["x-branch-id"];
+    if (xBranch && typeof xBranch === "string") {
+      branchId = xBranch;
+    }
+  }
+
+  // If still not present, resolve user's primary or first branch assignment
+  if (!branchId && session.organizationId) {
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const assignments = memoryDb.find(
+        "user_branch_assignments",
+        (a: any) => a.user_id === session.userId && a.organization_id === session.organizationId
+      );
+      if (assignments.length > 0) {
+        const primary = assignments.find((a: any) => a.is_primary) || assignments[0];
+        branchId = primary.branch_id;
+      }
+    } else {
+      const pool = getPostgresPool();
+      const res = await pool.query(
+        `SELECT branch_id FROM user_branch_assignments
+         WHERE user_id = $1 AND organization_id = $2
+         ORDER BY is_primary DESC LIMIT 1`,
+        [session.userId, session.organizationId]
+      );
+      if (res.rows.length > 0) {
+        branchId = res.rows[0].branch_id;
+      }
+    }
+  }
+
   return {
     session,
     userId: session.userId,
     organizationId: session.organizationId,
-    branchId: session.branchId,
+    branchId,
   };
 }
 
