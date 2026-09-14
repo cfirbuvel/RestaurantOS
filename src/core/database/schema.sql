@@ -455,3 +455,224 @@ CREATE POLICY tenant_isolation_realtime_tickets ON realtime_tickets
     AS RESTRICTIVE
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
+-- ============================================================================
+-- Phase 4: Delivery Management, Driver Availability Queue, Fleet & Batching
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS vehicles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    vehicle_type VARCHAR(50) NOT NULL DEFAULT 'SCOOTER',
+    license_plate VARCHAR(50) NOT NULL,
+    make VARCHAR(100),
+    model VARCHAR(100),
+    capacity INT NOT NULL DEFAULT 4,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_vehicle_plate UNIQUE (tenant_id, license_plate)
+);
+
+CREATE TABLE IF NOT EXISTS trackers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    provider VARCHAR(100) NOT NULL DEFAULT 'MOCK',
+    provider_device_id VARCHAR(100) NOT NULL,
+    external_device_id VARCHAR(100),
+    battery_level INT DEFAULT 100,
+    status VARCHAR(50) NOT NULL DEFAULT 'ONLINE',
+    last_seen_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_tracker_assignments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+    tracker_id UUID NOT NULL REFERENCES trackers(id) ON DELETE CASCADE,
+    assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    unassigned_at TIMESTAMPTZ,
+    assigned_by UUID
+);
+
+CREATE TABLE IF NOT EXISTS driver_vehicle_assignments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+    assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    unassigned_at TIMESTAMPTZ,
+    assigned_by UUID
+);
+
+CREATE TABLE IF NOT EXISTS drivers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    shift_status VARCHAR(50) NOT NULL DEFAULT 'OFF_SHIFT',
+    assignment_status VARCHAR(50) NOT NULL DEFAULT 'AVAILABLE',
+    trip_status VARCHAR(50) NOT NULL DEFAULT 'NOT_STARTED',
+    available_since TIMESTAMPTZ,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    can_self_assign BOOLEAN NOT NULL DEFAULT TRUE,
+    can_self_batch BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_driver_user UNIQUE (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS deliveries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    driver_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'WAITING',
+    priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
+    delivery_address JSONB NOT NULL DEFAULT '{}'::jsonb,
+    customer_notes TEXT,
+    delivery_notes TEXT,
+    assigned_at TIMESTAMPTZ,
+    picked_up_at TIMESTAMPTZ,
+    dispatched_at TIMESTAMPTZ,
+    arrived_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
+    failed_at TIMESTAMPTZ,
+    cancelled_at TIMESTAMPTZ,
+    cancellation_reason TEXT,
+    failure_reason TEXT,
+    proof_of_delivery JSONB,
+    version INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS delivery_assignment_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    delivery_id UUID NOT NULL REFERENCES deliveries(id) ON DELETE CASCADE,
+    previous_driver_id UUID,
+    new_driver_id UUID,
+    actor_type VARCHAR(50) NOT NULL,
+    actor_id UUID,
+    reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+    tracker_id UUID REFERENCES trackers(id) ON DELETE SET NULL,
+    latitude NUMERIC(10, 7) NOT NULL,
+    longitude NUMERIC(10, 7) NOT NULL,
+    accuracy_meters NUMERIC(6, 2) DEFAULT 5.0,
+    speed_kmh NUMERIC(5, 2) DEFAULT 0.0,
+    heading_degrees NUMERIC(5, 2) DEFAULT 0.0,
+    recorded_at TIMESTAMPTZ NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_trips (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    delivery_id UUID REFERENCES deliveries(id) ON DELETE SET NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at TIMESTAMPTZ,
+    distance_meters NUMERIC(10, 2) DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS delivery_batches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    driver_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'SUGGESTED',
+    strategy VARCHAR(50) NOT NULL DEFAULT 'SMART_HEURISTIC',
+    score NUMERIC(5, 2) NOT NULL DEFAULT 0.0,
+    scoring_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by UUID,
+    approved_by UUID,
+    approved_at TIMESTAMPTZ,
+    rejected_at TIMESTAMPTZ,
+    rejection_reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS delivery_batch_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id UUID NOT NULL REFERENCES delivery_batches(id) ON DELETE CASCADE,
+    delivery_id UUID NOT NULL REFERENCES deliveries(id) ON DELETE CASCADE,
+    sequence_index INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS intelligence_decision_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    decision_type VARCHAR(100) NOT NULL DEFAULT 'DELIVERY_BATCH_RECOMMENDATION',
+    candidate_delivery_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    candidate_driver_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    recommendation JSONB NOT NULL DEFAULT '{}'::jsonb,
+    scoring_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+    manager_action VARCHAR(50),
+    actor_id UUID,
+    rejection_reason TEXT,
+    algorithm_version VARCHAR(50) NOT NULL DEFAULT 'gen1_heuristic_v1',
+    model_version VARCHAR(50),
+    final_outcome JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ
+);
+
+-- Indexes for Phase 4
+CREATE INDEX IF NOT EXISTS idx_deliveries_branch_status ON deliveries(branch_id, status);
+CREATE INDEX IF NOT EXISTS idx_deliveries_driver ON deliveries(driver_id);
+CREATE INDEX IF NOT EXISTS idx_deliveries_order ON deliveries(order_id);
+CREATE INDEX IF NOT EXISTS idx_drivers_queue ON drivers(branch_id, shift_status, assignment_status, available_since);
+CREATE INDEX IF NOT EXISTS idx_vehicle_locations_lookup ON vehicle_locations(vehicle_id, recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_vehicle_trips_delivery ON vehicle_trips(delivery_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_batches_branch ON delivery_batches(branch_id, status);
+
+-- RLS Policies for Phase 4
+ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trackers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vehicle_tracker_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE driver_vehicle_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE deliveries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE delivery_assignment_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vehicle_locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vehicle_trips ENABLE ROW LEVEL SECURITY;
+ALTER TABLE delivery_batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE intelligence_decision_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_isolation_deliveries ON deliveries;
+CREATE POLICY tenant_isolation_deliveries ON deliveries
+    AS RESTRICTIVE
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
+DROP POLICY IF EXISTS tenant_isolation_drivers ON drivers;
+CREATE POLICY tenant_isolation_drivers ON drivers
+    AS RESTRICTIVE
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
+DROP POLICY IF EXISTS tenant_isolation_vehicles ON vehicles;
+CREATE POLICY tenant_isolation_vehicles ON vehicles
+    AS RESTRICTIVE
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);

@@ -134,9 +134,9 @@ describe("Security: Privilege Escalation", () => {
   it("DRIVER role has minimal delivery-only access", () => {
     const driverPerms = ROLE_PERMISSIONS["DRIVER"];
     expect(driverPerms).toBeDefined();
-    // Drivers should only have delivery permissions — no billing, inventory, or user management
+    // Drivers should only have delivery, driver and fleet read permissions — no billing, inventory, or user management
     const nonDeliveryPerms = driverPerms.filter(
-      (p) => !p.startsWith("delivery")
+      (p) => !p.startsWith("delivery") && !p.startsWith("driver") && p !== "fleet.read"
     );
     expect(nonDeliveryPerms).toHaveLength(0);
   });

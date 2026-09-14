@@ -62,13 +62,19 @@ export type Permission =
   // Delivery & Logistics
   | "delivery.read"
   | "delivery.assign"
+  | "delivery.self_assign"
+  | "delivery.release"
   | "delivery.batch"
   | "delivery.status_update"
   | "delivery.override"
+  | "delivery.manage"
+  | "driver.operate"
   // Fleet & Telematics
+  | "fleet.read"
   | "fleet.track"
   | "fleet.manage"
   | "telemetry.read"
+  | "telemetry.ingest"
   // Menu & Catalog
   | "menu.read"
   | "menu.manage"
@@ -130,12 +136,18 @@ export const ALL_PERMISSIONS: Permission[] = [
   "kds.manage",
   "delivery.read",
   "delivery.assign",
+  "delivery.self_assign",
+  "delivery.release",
   "delivery.batch",
   "delivery.status_update",
   "delivery.override",
+  "delivery.manage",
+  "driver.operate",
+  "fleet.read",
   "fleet.track",
   "fleet.manage",
   "telemetry.read",
+  "telemetry.ingest",
   "menu.read",
   "menu.manage",
   "products.manage",
@@ -184,11 +196,17 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "kds.recall",
     "kds.manage",
     "delivery.read",
+    "delivery.manage",
     "delivery.assign",
+    "delivery.self_assign",
+    "delivery.release",
     "delivery.batch",
     "delivery.status_update",
     "delivery.override",
+    "fleet.read",
     "fleet.track",
+    "fleet.manage",
+    "telemetry.read",
     "inventory.read",
     "inventory.adjust",
     "waste.track",
@@ -228,17 +246,27 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   DELIVERY_MANAGER: [
     "orders.read",
     "delivery.read",
+    "delivery.manage",
     "delivery.assign",
+    "delivery.self_assign",
+    "delivery.release",
     "delivery.batch",
     "delivery.status_update",
     "delivery.override",
+    "driver.operate",
+    "fleet.read",
     "fleet.track",
     "fleet.manage",
     "telemetry.read",
+    "telemetry.ingest",
   ],
   DRIVER: [
     "delivery.read",
+    "delivery.self_assign",
+    "delivery.release",
     "delivery.status_update",
+    "driver.operate",
+    "fleet.read",
   ],
   INVENTORY_MANAGER: [
     "inventory.read",

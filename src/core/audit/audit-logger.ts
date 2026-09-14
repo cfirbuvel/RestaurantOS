@@ -18,6 +18,7 @@ export interface AuditLogEntry {
   ipAddress?: string;
   userAgent?: string;
   requestId?: string;
+  metadata?: Record<string, any> | null;
 }
 
 const REDACTED_KEYS = new Set([
@@ -69,16 +70,18 @@ export class AuditLogger {
         ip_address: entry.ipAddress,
         user_agent: entry.userAgent,
         request_id: entry.requestId,
+        metadata: entry.metadata ? sanitizeAuditData(entry.metadata) : null,
       });
     }
 
     const pool = getPostgresPool();
+    const cleanMetadata = entry.metadata ? sanitizeAuditData(entry.metadata) : null;
     const { rows } = await pool.query(
       `INSERT INTO audit_logs (
         organization_id, restaurant_id, branch_id, actor_id, actor_type,
         action, entity, entity_id, previous_state, new_state,
-        ip_address, user_agent, request_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ip_address, user_agent, request_id, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
       [
         entry.organizationId || null,
@@ -94,6 +97,7 @@ export class AuditLogger {
         entry.ipAddress || null,
         entry.userAgent || null,
         entry.requestId || null,
+        cleanMetadata ? JSON.stringify(cleanMetadata) : null,
       ]
     );
 

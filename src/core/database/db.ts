@@ -513,6 +513,206 @@ export class MemoryDatabase {
       selected_modifiers: [],
       status: "PENDING",
     });
+
+    // ── Phase 4 Seed Data: Delivery, Drivers, Fleet & Batching ──
+    const driverUserId = "usr-02-driver";
+    this.insert("users", {
+      id: driverUserId,
+      email: "driver@restotest.co.il",
+      password_hash: bcrypt.hashSync("SecurePassword123!", 8),
+      pin_code_hash: bcrypt.hashSync("1234", 8),
+      first_name: "Dan",
+      last_name: "Driver",
+      phone: "052-9988776",
+      is_active: true,
+      email_verified: true,
+      pin_failed_attempts: 0,
+    });
+
+    this.insert("user_organizations", {
+      user_id: driverUserId,
+      organization_id: orgId,
+      role: "DRIVER",
+    });
+
+    this.insert("user_branch_assignments", {
+      user_id: driverUserId,
+      organization_id: orgId,
+      restaurant_id: restId,
+      branch_id: branchId,
+      role: "DRIVER",
+      is_primary: true,
+    });
+
+    const driver2UserId = "usr-03-driver";
+    this.insert("users", {
+      id: driver2UserId,
+      email: "driver2@restotest.co.il",
+      password_hash: bcrypt.hashSync("SecurePassword123!", 8),
+      pin_code_hash: bcrypt.hashSync("5678", 8),
+      first_name: "Yossi",
+      last_name: "Cohen",
+      phone: "054-1122334",
+      is_active: true,
+      email_verified: true,
+      pin_failed_attempts: 0,
+    });
+
+    this.insert("user_organizations", {
+      user_id: driver2UserId,
+      organization_id: orgId,
+      role: "DRIVER",
+    });
+
+    this.insert("user_branch_assignments", {
+      user_id: driver2UserId,
+      organization_id: orgId,
+      restaurant_id: restId,
+      branch_id: branchId,
+      role: "DRIVER",
+      is_primary: true,
+    });
+
+    // Drivers
+    this.insert("drivers", {
+      id: "drv-01-dan",
+      tenant_id: orgId,
+      branch_id: branchId,
+      user_id: driverUserId,
+      shift_status: "ON_SHIFT",
+      assignment_status: "AVAILABLE",
+      trip_status: "NOT_STARTED",
+      available_since: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
+      is_active: true,
+      can_self_assign: true,
+      can_self_batch: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("drivers", {
+      id: "drv-02-yossi",
+      tenant_id: orgId,
+      branch_id: branchId,
+      user_id: driver2UserId,
+      shift_status: "ON_SHIFT",
+      assignment_status: "AVAILABLE",
+      trip_status: "NOT_STARTED",
+      available_since: new Date(Date.now() - 15 * 60 * 1000), // 15 min ago
+      is_active: true,
+      can_self_assign: true,
+      can_self_batch: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // Vehicles
+    const veh01Id = "veh-01-scooter";
+    this.insert("vehicles", {
+      id: veh01Id,
+      tenant_id: orgId,
+      branch_id: branchId,
+      vehicle_type: "SCOOTER",
+      license_plate: "11-222-33",
+      make: "Kymco",
+      model: "Agility 125",
+      capacity: 4,
+      status: "ACTIVE",
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    const veh02Id = "veh-02-car";
+    this.insert("vehicles", {
+      id: veh02Id,
+      tenant_id: orgId,
+      branch_id: branchId,
+      vehicle_type: "SMALL_CAR",
+      license_plate: "44-555-66",
+      make: "Hyundai",
+      model: "i10",
+      capacity: 8,
+      status: "ACTIVE",
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // Trackers
+    const trk01Id = "trk-01";
+    this.insert("trackers", {
+      id: trk01Id,
+      tenant_id: orgId,
+      branch_id: branchId,
+      provider: "MOCK",
+      provider_device_id: "TEL-8891",
+      external_device_id: "IMEI-867530901",
+      battery_level: 98,
+      status: "ONLINE",
+      last_seen_at: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // Vehicle Tracker Assignment
+    this.insert("vehicle_tracker_assignments", {
+      id: "vta-01",
+      tenant_id: orgId,
+      vehicle_id: veh01Id,
+      tracker_id: trk01Id,
+      assigned_at: new Date(),
+      unassigned_at: null,
+      assigned_by: userId,
+    });
+
+    // Driver Vehicle Assignment (Dan -> Scooter)
+    this.insert("driver_vehicle_assignments", {
+      id: "dva-01",
+      tenant_id: orgId,
+      driver_id: driverUserId,
+      vehicle_id: veh01Id,
+      assigned_at: new Date(),
+      unassigned_at: null,
+      assigned_by: userId,
+    });
+
+    // Delivery for ord-01-seed-sample
+    this.insert("deliveries", {
+      id: "del-01-seed",
+      tenant_id: orgId,
+      branch_id: branchId,
+      order_id: seedOrderId,
+      driver_id: null,
+      vehicle_id: null,
+      status: "AVAILABLE_FOR_ASSIGNMENT",
+      priority: "NORMAL",
+      delivery_address: {
+        street: "הרצל",
+        houseNumber: "15",
+        entrance: "ב",
+        floor: "3",
+        apartment: "12",
+        city: "תל אביב",
+        postalCode: "61000",
+        notes: "נא לצלצל באינטרקום 12",
+        latitude: 32.0625,
+        longitude: 34.7702,
+      },
+      customer_notes: "נא לצרף הרבה מפיות",
+      delivery_notes: "קומה 3, יש מעלית",
+      assigned_at: null,
+      picked_up_at: null,
+      dispatched_at: null,
+      arrived_at: null,
+      delivered_at: null,
+      failed_at: null,
+      cancelled_at: null,
+      cancellation_reason: null,
+      failure_reason: null,
+      proof_of_delivery: null,
+      version: 1,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
   }
 
   reset() {
@@ -543,6 +743,18 @@ export class MemoryDatabase {
       "kds_ticket_items",
       "product_station_assignments",
       "realtime_tickets",
+      "vehicles",
+      "trackers",
+      "vehicle_tracker_assignments",
+      "driver_vehicle_assignments",
+      "drivers",
+      "deliveries",
+      "delivery_assignment_history",
+      "vehicle_locations",
+      "vehicle_trips",
+      "delivery_batches",
+      "delivery_batch_items",
+      "intelligence_decision_logs",
     ];
     for (const name of tableNames) {
       this.tables.set(name, new Map());
@@ -639,7 +851,7 @@ export class MemoryDatabase {
 }
 
 // Global in-memory DB singleton preserved across Next.js dev reloads
-const DB_SCHEMA_VERSION = 3;
+const DB_SCHEMA_VERSION = 4;
 
 const globalForDb = globalThis as unknown as {
   memoryDb: MemoryDatabase | undefined;
@@ -649,7 +861,7 @@ const globalForDb = globalThis as unknown as {
 if (
   !globalForDb.memoryDb ||
   globalForDb.dbSchemaVersion !== DB_SCHEMA_VERSION ||
-  !globalForDb.memoryDb.getTable("kds_stations")?.has("st-01-burgers")
+  !globalForDb.memoryDb.getTable("deliveries")?.has("del-01-seed")
 ) {
   globalForDb.memoryDb = new MemoryDatabase();
   globalForDb.dbSchemaVersion = DB_SCHEMA_VERSION;
@@ -664,7 +876,8 @@ if (process.env.NODE_ENV !== "production") {
     !memoryDb.findById("users", "c0ccd37f-a43a-4365-9093-d4158ee0f749") ||
     !memoryDb.findById("customers", "cust-01-israel-israeli") ||
     !memoryDb.findById("products", "prod-01-classic-burger") ||
-    !memoryDb.findById("kds_stations", "st-01-burgers")
+    !memoryDb.findById("kds_stations", "st-01-burgers") ||
+    !memoryDb.findById("deliveries", "del-01-seed")
   ) {
     memoryDb.seedDevData();
   }
