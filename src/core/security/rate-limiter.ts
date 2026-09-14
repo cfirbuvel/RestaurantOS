@@ -13,6 +13,12 @@ export interface RateLimitResult {
 
 export class RateLimiter {
   async check(key: string, options: RateLimitOptions): Promise<RateLimitResult> {
+    // In development, never block requests — MockRedis counters persist for
+    // the entire server lifetime, so repeated testing always hits the limit.
+    if (process.env.NODE_ENV === "development") {
+      return { allowed: true, remaining: options.maxRequests, resetTime: 0 };
+    }
+
     const redis = getRedisClient();
     const redisKey = `ratelimit:${key}`;
 

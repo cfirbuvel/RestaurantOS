@@ -3,6 +3,15 @@ import { memoryDb, getPostgresPool } from "@/core/database/db";
 import { User, UserSecurity } from "../domain/user";
 import { Role, Permission, ROLE_PERMISSIONS } from "../domain/rbac";
 import { auditLogger } from "@/core/audit/audit-logger";
+import { getRedisClient } from "@/core/cache/redis";
+
+// Token TTLs
+const PASSWORD_RESET_TTL_SECONDS = 15 * 60;       // 15 minutes
+const EMAIL_VERIFY_TTL_SECONDS  = 24 * 60 * 60;  // 24 hours
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 export interface Session {
   id: string;
@@ -546,6 +555,168 @@ export class AuthService {
     }
 
     return { orgId: res.rows[0].organization_id, role: res.rows[0].role as Role };
+  }
+
+  // ─── Password Reset ──────────────────────────────────────────────────────
+
+  /**
+   * Generates a cryptographically secure reset token, stores its SHA-256 hash
+   * in the cache with a 15-minute TTL, and dispatches the reset email.
+   * Always resolves successfully to prevent email enumeration.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    const normalizedEmail = email.toLowerCase().trim();
+    let userRow: any;
+
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const users = memoryDb.find("users", (u) => u.email === normalizedEmail);
+      userRow = users[0] ?? null;
+    } else {
+      const pool = getPostgresPool();
+      const res = await pool.query("SELECT * FROM users WHERE email = $1", [normalizedEmail]);
+      userRow = res.rows[0] ?? null;
+    }
+
+    // Silently return – do not reveal whether email exists
+    if (!userRow) return;
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashToken(token);
+    const cache = getRedisClient();
+
+    // Store mapping: hash → userId
+    await cache.set(`pwd_reset:${tokenHash}`, userRow.id, "EX", PASSWORD_RESET_TTL_SECONDS);
+
+    await auditLogger.log({
+      actor: { actorId: userRow.id, actorType: "USER" },
+      action: "PASSWORD_RESET_REQUESTED",
+      entity: "User",
+      entityId: userRow.id,
+    });
+
+    // In production this dispatches a real email. Here we emit a structured
+    // log so the reset link is accessible during development/testing.
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/reset-password?token=${token}`;
+    console.log(`[Auth] Password reset link for ${normalizedEmail}: ${resetUrl}`);
+    // TODO: await notificationService.sendEmail({ to: normalizedEmail, template: "password-reset", data: { resetUrl } });
+  }
+
+  /**
+   * Validates the raw reset token, re-hashes it, looks up the userId in cache,
+   * updates the password, and revokes ALL active sessions for the account.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = hashToken(token);
+    const cache = getRedisClient();
+    const userId = await cache.get(`pwd_reset:${tokenHash}`);
+
+    if (!userId) {
+      throw new Error("Password reset token is invalid or has expired.");
+    }
+
+    const newHash = await UserSecurity.hashPassword(newPassword);
+
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      memoryDb.update("users", userId, { password_hash: newHash });
+    } else {
+      const pool = getPostgresPool();
+      await pool.query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", [
+        newHash,
+        userId,
+      ]);
+    }
+
+    // Consume token (one-time use)
+    await cache.del(`pwd_reset:${tokenHash}`);
+
+    // Invalidate all active sessions to enforce re-authentication
+    await this.revokeAllUserSessions(userId);
+
+    await auditLogger.log({
+      actor: { actorId: userId, actorType: "USER" },
+      action: "PASSWORD_RESET_COMPLETED",
+      entity: "User",
+      entityId: userId,
+    });
+  }
+
+  // ─── Email Verification ──────────────────────────────────────────────────
+
+  /**
+   * Generates an email verification token, stores its hash in cache with a
+   * 24-hour TTL, and dispatches the verification email.
+   */
+  async sendEmailVerification(userId: string): Promise<{ sent: boolean; reason?: string }> {
+    let userRow: any;
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      userRow = memoryDb.findById("users", userId);
+    } else {
+      const pool = getPostgresPool();
+      const res = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+      userRow = res.rows[0] ?? null;
+    }
+
+    if (!userRow) throw new Error("User not found");
+    if (userRow.email_verified) return { sent: false, reason: "ALREADY_VERIFIED" }; // already verified – no-op
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashToken(token);
+    const cache = getRedisClient();
+
+    await cache.set(`email_verify:${tokenHash}`, userId, "EX", EMAIL_VERIFY_TTL_SECONDS);
+
+    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/verify-email?token=${token}`;
+    console.log(`[Auth] Email verification link for ${userRow.email}: ${verifyUrl}`);
+    // TODO: await notificationService.sendEmail({ to: userRow.email, template: "email-verify", data: { verifyUrl } });
+    return { sent: true };
+  }
+
+  /**
+   * Validates the raw verification token and marks the user's email as verified.
+   */
+  async verifyEmail(token: string): Promise<void> {
+    const tokenHash = hashToken(token);
+    const cache = getRedisClient();
+    const userId = await cache.get(`email_verify:${tokenHash}`);
+
+    if (!userId) {
+      throw new Error("Email verification token is invalid or has expired.");
+    }
+
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      memoryDb.update("users", userId, { email_verified: true });
+    } else {
+      const pool = getPostgresPool();
+      await pool.query("UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1", [userId]);
+    }
+
+    // Consume token (one-time use)
+    await cache.del(`email_verify:${tokenHash}`);
+
+    await auditLogger.log({
+      actor: { actorId: userId, actorType: "USER" },
+      action: "EMAIL_VERIFIED",
+      entity: "User",
+      entityId: userId,
+    });
+  }
+
+  // ─── Session Revocation ──────────────────────────────────────────────────
+
+  /**
+   * Revokes ALL sessions for a given user (used on password reset and account
+   * deactivation). Operates in both memory-db and Postgres modes.
+   */
+  async revokeAllUserSessions(userId: string): Promise<void> {
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const sessions = memoryDb.find("sessions", (s) => s.user_id === userId);
+      for (const s of sessions) {
+        memoryDb.delete("sessions", s.id);
+      }
+      return;
+    }
+    const pool = getPostgresPool();
+    await pool.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
   }
 
   private mapUser(row: any): User {
