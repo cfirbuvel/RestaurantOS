@@ -630,99 +630,207 @@ export default function OperationalDashboard() {
           </div>
         )}
 
-        {/* TAB 5: INVENTORY & PHASE 5 PREVIEW */}
+        {/* TAB 5: INVENTORY & LOGISTICS MANAGEMENT */}
         {activeTab === "inventory" && (
           <div className="space-y-6">
-            <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            {/* Top Bar: Operational Policy Switcher & Highlights */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
                 <div className="flex items-center gap-2">
                   <Boxes className="w-6 h-6 text-blue-600" />
                   <div>
                     <h2 className="text-lg font-bold text-primary">מערך מלאי, עצי מוצר (BOM) ומחסנים — Phase 5</h2>
                     <p className="text-xs text-gray-500">
-                      מעקב רב-מחסני, המרת יחידות מידה, ניפוק אוטומטי מבוסס מתכונים, ופקודות רכש ספקים.
+                      ניהול רב-מחסני, ניפוק אוטומטי מבוסס עצי מוצר, העברות בין סניפים, בקרת פחת ורכש ספקים
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-bold px-3 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                  מוכן לביצוע (Execution Ready)
-                </span>
-              </div>
-
-              {/* Phase 5 Features Architecture Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <Sliders className="w-4 h-4 text-blue-600" />
-                    <span>מדיניות ניפוק מלאי מוגדרת</span>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    ברירת מחדל קנונית: <span className="font-bold text-blue-700">ON_ACCEPTED</span> (ניפוק מידי עם אישור ההזמנה לשמירת חומרי גלם), עם תמיכה ב-ON_PREPARATION_START וב-ON_FULFILLMENT.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <Layers className="w-4 h-4 text-purple-600" />
-                    <span>עצי מוצר (BOM) והמרת יחידות</span>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    פירוק מנות לרכיבים (גרמים, מיליליטרים, יחידות), מתכוני משנה, אחוזי פחת (Yield Loss) ושקלול תוספות.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <Truck className="w-4 h-4 text-amber-600" />
-                    <span>ספקים, פקודות רכש ופחת</span>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    קבלת סחורה אידמפוטנטית, מעקב פחת לפי סיבות (פג תוקף, טעות הכנה), והעברות בין מחסנים.
-                  </p>
+                <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 text-xs">
+                  <Sliders className="w-4 h-4 text-blue-600" />
+                  <span className="font-bold text-blue-900">מדיניות ניפוק פעילה:</span>
+                  <span className="font-mono font-extrabold text-blue-700">ON_ACCEPTED (ברירת מחדל קנונית)</span>
                 </div>
               </div>
 
-              {/* Sample BOM Explosion Table */}
-              <div className="pt-4 border-t border-gray-100">
-                <h3 className="text-sm font-bold text-gray-800 mb-2">דוגמת עץ מוצר (BOM Recipe Explosion) — המבורגר קלאסי 220 גרם</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
-                      <tr>
-                        <th className="p-2.5">חומר גלם (Ingredient)</th>
-                        <th className="p-2.5">יחידת מידה</th>
-                        <th className="p-2.5">כמות למנה</th>
-                        <th className="p-2.5">אחוז פחת (Yield)</th>
-                        <th className="p-2.5">מחסן ניפוק</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      <tr>
-                        <td className="p-2.5 font-bold">קציצת בקר איכותי 100%</td>
-                        <td className="p-2.5">גרם (G)</td>
-                        <td className="p-2.5 tabular-nums font-bold">220</td>
-                        <td className="p-2.5 tabular-nums">95%</td>
-                        <td className="p-2.5">מקרר פס הכנה (Kitchen)</td>
-                      </tr>
-                      <tr>
-                        <td className="p-2.5 font-bold">לחמניית בריוש שומשום</td>
-                        <td className="p-2.5">יחידה (Unit)</td>
-                        <td className="p-2.5 tabular-nums font-bold">1</td>
-                        <td className="p-2.5 tabular-nums">100%</td>
-                        <td className="p-2.5">מחסן יבש (Dry Storage)</td>
-                      </tr>
-                      <tr>
-                        <td className="p-2.5 font-bold">רוטב הבית שורטק</td>
-                        <td className="p-2.5">מיליליטר (mL)</td>
-                        <td className="p-2.5 tabular-nums font-bold">30</td>
-                        <td className="p-2.5 tabular-nums">98%</td>
-                        <td className="p-2.5">מקרר פס הכנה (Kitchen)</td>
-                      </tr>
-                    </tbody>
-                  </table>
+              {/* Real-time Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between text-gray-500 text-xs mb-1">
+                    <span>חומרי גלם מנוהלים</span>
+                    <Package className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="text-2xl font-black text-gray-900">5</div>
+                  <div className="text-[11px] text-emerald-600 mt-1 font-semibold">בקר, לחמניות, צ'דר, רטבים, תפ"א</div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between text-gray-500 text-xs mb-1">
+                    <span>מחסנים פעילים</span>
+                    <Boxes className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="text-2xl font-black text-gray-900">3</div>
+                  <div className="text-[11px] text-gray-500 mt-1">ראשי, פס הכנה מטבח, חדר הקפאה</div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between text-gray-500 text-xs mb-1">
+                    <span>התראות מלאי נמוך</span>
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="text-2xl font-black text-amber-600">0</div>
+                  <div className="text-[11px] text-emerald-600 mt-1 font-semibold">כל המלאים מעל נקודת הזמנה</div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between text-gray-500 text-xs mb-1">
+                    <span>עלות פחת מצטברת</span>
+                    <Flame className="w-4 h-4 text-rose-600" />
+                  </div>
+                  <div className="text-2xl font-black text-rose-600">₪22.00</div>
+                  <div className="text-[11px] text-gray-500 mt-1">2 רישומי פחת השבוע</div>
                 </div>
               </div>
-            </section>
+            </div>
+
+            {/* Two Column Layout: Live Stock Levels & Interactive BOM Calculator */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Warehouse Stock Levels */}
+              <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Database className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-sm font-bold text-gray-900">רמות מלאי נוכחיות (מקרר פס הכנה — Kitchen Line)</h3>
+                  </div>
+                  <span className="text-xs text-gray-500">עודכן הרגע</span>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">בשר בקר טחון לקציצות</div>
+                      <div className="text-gray-500 text-[11px]">מק"ט: ING-BEEF-01 | יחידת ניפוק: גרם (g)</div>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono font-extrabold text-sm text-gray-900">44,000 g (44.0 kg)</div>
+                      <div className="text-emerald-600 text-[11px] font-semibold">סף מינימום: 5,000 g | תקין</div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">לחמניית בריוש שומשום</div>
+                      <div className="text-gray-500 text-[11px]">מק"ט: ING-BUN-01 | יחידת ניפוק: יחידה (unit)</div>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono font-extrabold text-sm text-gray-900">200 יח'</div>
+                      <div className="text-emerald-600 text-[11px] font-semibold">נקודת הזמנה: 150 יח' | תקין</div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">פרוסות צ'דר איכותי</div>
+                      <div className="text-gray-500 text-[11px]">מק"ט: ING-CHEDDAR-01 | יחידת ניפוק: יחידה (unit)</div>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono font-extrabold text-sm text-gray-900">150 יח'</div>
+                      <div className="text-emerald-600 text-[11px] font-semibold">נקודת הזמנה: 100 יח' | תקין</div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">רוטב הבית שורטק</div>
+                      <div className="text-gray-500 text-[11px]">מק"ט: ING-SAUCE-01 | יחידת ניפוק: מ"ל (ml)</div>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono font-extrabold text-sm text-gray-900">8,000 ml (8.0 L)</div>
+                      <div className="text-emerald-600 text-[11px] font-semibold">נקודת הזמנה: 5,000 ml | תקין</div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">תפוחי אדמה חתוכים לצ'יפס</div>
+                      <div className="text-gray-500 text-[11px]">מק"ט: ING-POTATO-01 | יחידת ניפוק: גרם (g)</div>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono font-extrabold text-sm text-gray-900">35,000 g (35.0 kg)</div>
+                      <div className="text-emerald-600 text-[11px] font-semibold">נקודת הזמנה: 30,000 g | תקין</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Right Column: Live BOM Explosion Calculator */}
+              <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-purple-600" />
+                    <h3 className="text-sm font-bold text-gray-900">מחשבון עצי מוצר (BOM) ועלות מזון תיאורטית</h3>
+                  </div>
+                  <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-bold">חישוב בזמן אמת</span>
+                </div>
+
+                <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100 space-y-3 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-gray-800">מנה נבחרת: המבורגר קלאסי 220 גרם</span>
+                    <span className="font-bold text-purple-900">מחיר מכירה ללקוח: ₪58.00</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-[11px]">
+                      <thead className="bg-white text-gray-600 font-bold border-b border-purple-200">
+                        <tr>
+                          <th className="p-2">חומר גלם</th>
+                          <th className="p-2">כמות ברוטו (כולל פחת)</th>
+                          <th className="p-2">עלות יחידה</th>
+                          <th className="p-2">סה"כ עלות</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-purple-100 bg-white/70">
+                        <tr>
+                          <td className="p-2 font-semibold">בשר בקר טחון (95% Yield)</td>
+                          <td className="p-2 font-mono">231.58 g</td>
+                          <td className="p-2 font-mono">₪0.075 / g</td>
+                          <td className="p-2 font-mono font-bold">₪17.37</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">לחמניית בריוש שומשום</td>
+                          <td className="p-2 font-mono">1.00 יח'</td>
+                          <td className="p-2 font-mono">₪2.20 / יח'</td>
+                          <td className="p-2 font-mono font-bold">₪2.20</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">רוטב הבית שורטק (98% Yield)</td>
+                          <td className="p-2 font-mono">30.61 ml</td>
+                          <td className="p-2 font-mono">₪0.040 / ml</td>
+                          <td className="p-2 font-mono font-bold">₪1.22</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold text-purple-700">תוספת: פרוסת צ'דר</td>
+                          <td className="p-2 font-mono">1.00 יח'</td>
+                          <td className="p-2 font-mono">₪1.10 / יח'</td>
+                          <td className="p-2 font-mono font-bold">₪1.10</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="pt-2 border-t border-purple-200 flex justify-between items-center text-xs">
+                    <div>
+                      <span className="text-gray-600">עלות מזון תיאורטית (Theoretical Cost): </span>
+                      <span className="font-bold text-gray-900 font-mono text-sm">₪21.89</span>
+                    </div>
+                    <div className="text-left">
+                      <span className="text-gray-600">Food Cost %: </span>
+                      <span className="font-bold text-emerald-700 font-mono text-sm">37.7%</span>
+                      <span className="text-gray-400 text-[10px] block">רווח גולמי: 62.3%</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         )}
 

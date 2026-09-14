@@ -737,8 +737,218 @@ export class MemoryDatabase {
       cancelled_at: null,
       cancellation_reason: null,
       failure_reason: null,
-      proof_of_delivery: null,
-      version: 1,
+    });
+
+    // ── Phase 5 Seed Data: Inventory, Warehouses, Suppliers & Recipes ──
+    const unitGram = "g";
+    const unitKg = "kg";
+    const unitMl = "ml";
+    const unitLiter = "l";
+    const unitPiece = "unit";
+
+    this.insert("units_of_measure", { id: unitGram, name: "גרם (Gram)", symbol: "g", dimension: "WEIGHT", conversion_factor: 1.0, is_system: true });
+    this.insert("units_of_measure", { id: unitKg, name: "קילוגרם (Kilogram)", symbol: "kg", dimension: "WEIGHT", base_unit_id: unitGram, conversion_factor: 1000.0, is_system: true });
+    this.insert("units_of_measure", { id: unitMl, name: "מיליליטר (Milliliter)", symbol: "ml", dimension: "VOLUME", conversion_factor: 1.0, is_system: true });
+    this.insert("units_of_measure", { id: unitLiter, name: "ליטר (Liter)", symbol: "l", dimension: "VOLUME", base_unit_id: unitMl, conversion_factor: 1000.0, is_system: true });
+    this.insert("units_of_measure", { id: unitPiece, name: "יחידה (Piece)", symbol: "unit", dimension: "UNIT", conversion_factor: 1.0, is_system: true });
+
+    this.insert("unit_conversions", { id: "uc-kg-g", from_unit_id: unitKg, to_unit_id: unitGram, factor: 1000.0 });
+    this.insert("unit_conversions", { id: "uc-l-ml", from_unit_id: unitLiter, to_unit_id: unitMl, factor: 1000.0 });
+
+    // Warehouses
+    const whMainId = "wh-01-main";
+    const whKitchenId = "wh-02-kitchen";
+    const whFreezerId = "wh-03-freezer";
+
+    this.insert("warehouses", { id: whMainId, tenant_id: orgId, branch_id: branchId, name: "מחסן ראשי (Main Warehouse)", warehouse_type: "MAIN_WAREHOUSE", is_active: true });
+    this.insert("warehouses", { id: whKitchenId, tenant_id: orgId, branch_id: branchId, name: "מקרר פס הכנה (Kitchen Line)", warehouse_type: "KITCHEN", is_active: true });
+    this.insert("warehouses", { id: whFreezerId, tenant_id: orgId, branch_id: branchId, name: "חדר הקפאה (Walk-in Freezer)", warehouse_type: "WALK_IN_FREEZER", is_active: true });
+
+    // Ingredients
+    const ingBeefId = "ing-01-beef-patty";
+    const ingBunId = "ing-02-burger-bun";
+    const ingCheddarId = "ing-03-cheddar-slice";
+    const ingSauceId = "ing-04-house-sauce";
+    const ingFriesId = "ing-05-potatoes";
+
+    this.insert("ingredients", {
+      id: ingBeefId,
+      tenant_id: orgId,
+      name: "בשר בקר טחון לקציצות",
+      sku: "ING-BEEF-01",
+      category: "בשרים",
+      primary_unit_id: unitGram,
+      storage_unit_id: unitKg,
+      cost_per_unit: 0.075, // ₪75 per kg -> ₪0.075 per gram
+      currency: "ILS",
+      minimum_stock_level: 5000.0,
+      reorder_point: 15000.0,
+      reorder_quantity: 50000.0,
+      allergens: [],
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("ingredients", {
+      id: ingBunId,
+      tenant_id: orgId,
+      name: "לחמניית בריוש שומשום",
+      sku: "ING-BUN-01",
+      category: "מאפים",
+      primary_unit_id: unitPiece,
+      storage_unit_id: unitPiece,
+      cost_per_unit: 2.20,
+      currency: "ILS",
+      minimum_stock_level: 50.0,
+      reorder_point: 150.0,
+      reorder_quantity: 300.0,
+      allergens: ["גלוטן", "שומשום"],
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("ingredients", {
+      id: ingCheddarId,
+      tenant_id: orgId,
+      name: "פרוסות צ'דר איכותי",
+      sku: "ING-CHEDDAR-01",
+      category: "מוצרי חלב",
+      primary_unit_id: unitPiece,
+      storage_unit_id: unitPiece,
+      cost_per_unit: 1.10,
+      currency: "ILS",
+      minimum_stock_level: 40.0,
+      reorder_point: 100.0,
+      reorder_quantity: 200.0,
+      allergens: ["חלב"],
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("ingredients", {
+      id: ingSauceId,
+      tenant_id: orgId,
+      name: "רוטב הבית שורטק",
+      sku: "ING-SAUCE-01",
+      category: "רטבים",
+      primary_unit_id: unitMl,
+      storage_unit_id: unitLiter,
+      cost_per_unit: 0.04, // ₪40 per liter -> ₪0.04 per ml
+      currency: "ILS",
+      minimum_stock_level: 2000.0,
+      reorder_point: 5000.0,
+      reorder_quantity: 20000.0,
+      allergens: ["חרדל", "ביצים"],
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("ingredients", {
+      id: ingFriesId,
+      tenant_id: orgId,
+      name: "תפוחי אדמה חתוכים לצ'יפס",
+      sku: "ING-POTATO-01",
+      category: "ירקות ותוספות",
+      primary_unit_id: unitGram,
+      storage_unit_id: unitKg,
+      cost_per_unit: 0.015,
+      currency: "ILS",
+      minimum_stock_level: 10000.0,
+      reorder_point: 30000.0,
+      reorder_quantity: 100000.0,
+      allergens: [],
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // Initial Inventory Stocks in Kitchen Line
+    this.insert("inventory_stocks", { id: "stk-01", tenant_id: orgId, warehouse_id: whKitchenId, ingredient_id: ingBeefId, quantity: 44000.0, reserved_quantity: 0.0, available_quantity: 44000.0, updated_at: new Date() });
+    this.insert("inventory_stocks", { id: "stk-02", tenant_id: orgId, warehouse_id: whKitchenId, ingredient_id: ingBunId, quantity: 200.0, reserved_quantity: 0.0, available_quantity: 200.0, updated_at: new Date() });
+    this.insert("inventory_stocks", { id: "stk-03", tenant_id: orgId, warehouse_id: whKitchenId, ingredient_id: ingCheddarId, quantity: 150.0, reserved_quantity: 0.0, available_quantity: 150.0, updated_at: new Date() });
+    this.insert("inventory_stocks", { id: "stk-04", tenant_id: orgId, warehouse_id: whKitchenId, ingredient_id: ingSauceId, quantity: 8000.0, reserved_quantity: 0.0, available_quantity: 8000.0, updated_at: new Date() });
+    this.insert("inventory_stocks", { id: "stk-05", tenant_id: orgId, warehouse_id: whKitchenId, ingredient_id: ingFriesId, quantity: 35000.0, reserved_quantity: 0.0, available_quantity: 35000.0, updated_at: new Date() });
+
+    // Recipes & BOM: Classic Burger (prodClassicId)
+    const recBurgerId = "rec-01-classic-burger";
+    this.insert("recipes", {
+      id: recBurgerId,
+      tenant_id: orgId,
+      product_id: prodClassicId,
+      variant_id: null,
+      name: "מתכון המבורגר קלאסי 220 גרם",
+      yield_portions: 1.0,
+      prep_time_minutes: 8,
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("recipe_items", { id: "ri-01", tenant_id: orgId, recipe_id: recBurgerId, ingredient_id: ingBeefId, quantity: 220.0, unit_id: unitGram, yield_percentage: 95.0, created_at: new Date() });
+    this.insert("recipe_items", { id: "ri-02", tenant_id: orgId, recipe_id: recBurgerId, ingredient_id: ingBunId, quantity: 1.0, unit_id: unitPiece, yield_percentage: 100.0, created_at: new Date() });
+    this.insert("recipe_items", { id: "ri-03", tenant_id: orgId, recipe_id: recBurgerId, ingredient_id: ingSauceId, quantity: 30.0, unit_id: unitMl, yield_percentage: 98.0, created_at: new Date() });
+
+    // Recipe for Cheddar Modifier (mod-cheddar)
+    const recCheddarModId = "rec-mod-cheddar";
+    this.insert("recipes", {
+      id: recCheddarModId,
+      tenant_id: orgId,
+      modifier_id: "mod-cheddar",
+      name: "תוספת צ'דר",
+      yield_portions: 1.0,
+      prep_time_minutes: 0,
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    this.insert("recipe_items", { id: "ri-04", tenant_id: orgId, recipe_id: recCheddarModId, ingredient_id: ingCheddarId, quantity: 1.0, unit_id: unitPiece, yield_percentage: 100.0, created_at: new Date() });
+
+    // Recipe for Belgian Fries (prodFriesId)
+    const recFriesId = "rec-02-fries";
+    this.insert("recipes", {
+      id: recFriesId,
+      tenant_id: orgId,
+      product_id: prodFriesId,
+      name: "מתכון צ'יפס בלגי",
+      yield_portions: 1.0,
+      prep_time_minutes: 5,
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    this.insert("recipe_items", { id: "ri-05", tenant_id: orgId, recipe_id: recFriesId, ingredient_id: ingFriesId, quantity: 250.0, unit_id: unitGram, yield_percentage: 92.0, created_at: new Date() });
+
+    // Suppliers
+    const supMeatId = "sup-01-meat";
+    this.insert("suppliers", {
+      id: supMeatId,
+      tenant_id: orgId,
+      name: "בשר איכות עמק חפר בע\"מ",
+      contact_name: "דוד מנשה",
+      email: "orders@hefer-meat.co.il",
+      phone: "09-8877665",
+      payment_terms: "שוטף + 30",
+      lead_time_days: 1,
+      is_active: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    this.insert("supplier_items", {
+      id: "si-01",
+      tenant_id: orgId,
+      supplier_id: supMeatId,
+      ingredient_id: ingBeefId,
+      supplier_sku: "HEFER-BEEF-PREM",
+      purchase_unit_id: unitKg,
+      cost_price: 75.0,
+      currency: "ILS",
+      minimum_order_quantity: 20.0,
+      is_preferred: true,
       created_at: new Date(),
       updated_at: new Date(),
     });
@@ -784,6 +994,27 @@ export class MemoryDatabase {
       "delivery_batches",
       "delivery_batch_items",
       "intelligence_decision_logs",
+      // Phase 5 tables
+      "units_of_measure",
+      "unit_conversions",
+      "ingredients",
+      "warehouses",
+      "storage_locations",
+      "inventory_stocks",
+      "recipes",
+      "recipe_items",
+      "suppliers",
+      "supplier_items",
+      "purchase_orders",
+      "purchase_order_items",
+      "goods_receipts",
+      "goods_receipt_items",
+      "stock_movements",
+      "inventory_transfers",
+      "inventory_transfer_items",
+      "waste_records",
+      "inventory_counts",
+      "inventory_count_items",
     ];
     for (const name of tableNames) {
       this.tables.set(name, new Map());

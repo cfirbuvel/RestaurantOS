@@ -676,3 +676,350 @@ CREATE POLICY tenant_isolation_vehicles ON vehicles
     AS RESTRICTIVE
     USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
     WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
+-- ============================================================================
+-- Phase 5: Inventory, Warehouses, Suppliers, Recipes (BOM) & Waste
+-- ============================================================================
+
+-- 1. Units of Measure & Conversions
+CREATE TABLE IF NOT EXISTS units_of_measure (
+    id VARCHAR(50) PRIMARY KEY,
+    tenant_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    symbol VARCHAR(20) NOT NULL,
+    dimension VARCHAR(50) NOT NULL, -- 'WEIGHT', 'VOLUME', 'UNIT', 'PACKAGE'
+    base_unit_id VARCHAR(50),
+    conversion_factor NUMERIC(14, 6) NOT NULL DEFAULT 1.0,
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS unit_conversions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    from_unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    to_unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    factor NUMERIC(14, 6) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2. Raw Ingredients & Items
+CREATE TABLE IF NOT EXISTS ingredients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    category VARCHAR(100),
+    primary_unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    storage_unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    cost_per_unit NUMERIC(12, 4) NOT NULL DEFAULT 0.0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'ILS',
+    minimum_stock_level NUMERIC(12, 4) NOT NULL DEFAULT 0.0,
+    reorder_point NUMERIC(12, 4) NOT NULL DEFAULT 0.0,
+    reorder_quantity NUMERIC(12, 4) NOT NULL DEFAULT 0.0,
+    allergens JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_ingredient_sku UNIQUE (tenant_id, sku)
+);
+
+-- 3. Warehouses & Storage Locations
+CREATE TABLE IF NOT EXISTS warehouses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    warehouse_type VARCHAR(50) NOT NULL DEFAULT 'MAIN_WAREHOUSE', -- 'MAIN_WAREHOUSE', 'KITCHEN', 'WALK_IN_FREEZER', 'DRY_STORAGE', 'BAR', 'COMMISSARY'
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS storage_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    zone VARCHAR(50),
+    shelf VARCHAR(50),
+    bin VARCHAR(50),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 4. Inventory Stock Levels
+CREATE TABLE IF NOT EXISTS inventory_stocks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    quantity NUMERIC(14, 4) NOT NULL DEFAULT 0.0,
+    reserved_quantity NUMERIC(14, 4) NOT NULL DEFAULT 0.0,
+    available_quantity NUMERIC(14, 4) NOT NULL DEFAULT 0.0,
+    last_counted_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_warehouse_ingredient UNIQUE (warehouse_id, ingredient_id)
+);
+
+-- 5. Recipes & Bill of Materials (BOM)
+CREATE TABLE IF NOT EXISTS recipes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    variant_id UUID REFERENCES product_variants(id) ON DELETE CASCADE,
+    modifier_id UUID REFERENCES modifiers(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    yield_portions NUMERIC(10, 2) NOT NULL DEFAULT 1.0,
+    prep_time_minutes INTEGER NOT NULL DEFAULT 0,
+    is_sub_recipe BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS recipe_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+    ingredient_id UUID REFERENCES ingredients(id) ON DELETE CASCADE,
+    sub_recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+    quantity NUMERIC(14, 4) NOT NULL,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    yield_percentage NUMERIC(5, 2) NOT NULL DEFAULT 100.0, -- Account for prep waste
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 6. Suppliers & Catalog
+CREATE TABLE IF NOT EXISTS suppliers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    contact_name VARCHAR(100),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    payment_terms VARCHAR(100),
+    lead_time_days INTEGER NOT NULL DEFAULT 1,
+    tax_id VARCHAR(50),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS supplier_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    supplier_id UUID NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    supplier_sku VARCHAR(100),
+    purchase_unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    cost_price NUMERIC(12, 4) NOT NULL,
+    currency VARCHAR(10) NOT NULL DEFAULT 'ILS',
+    minimum_order_quantity NUMERIC(12, 4) NOT NULL DEFAULT 1.0,
+    is_preferred BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 7. Purchase Orders & Goods Receipts
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    supplier_id UUID NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+    destination_warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    po_number VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT', -- 'DRAFT', 'SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'ILS',
+    expected_delivery_date DATE,
+    submitted_at TIMESTAMPTZ,
+    received_at TIMESTAMPTZ,
+    notes TEXT,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    purchase_order_id UUID NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    ordered_quantity NUMERIC(14, 4) NOT NULL,
+    received_quantity NUMERIC(14, 4) NOT NULL DEFAULT 0.0,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    unit_price NUMERIC(12, 4) NOT NULL,
+    total_price NUMERIC(12, 2) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS goods_receipts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    purchase_order_id UUID REFERENCES purchase_orders(id) ON DELETE CASCADE,
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    receipt_number VARCHAR(50) NOT NULL,
+    idempotency_key VARCHAR(255) UNIQUE,
+    received_by UUID REFERENCES users(id),
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS goods_receipt_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    goods_receipt_id UUID NOT NULL REFERENCES goods_receipts(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    quantity NUMERIC(14, 4) NOT NULL,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    unit_cost NUMERIC(12, 4) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8. Immutable Stock Movements Ledger
+CREATE TABLE IF NOT EXISTS stock_movements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    source_warehouse_id UUID REFERENCES warehouses(id),
+    destination_warehouse_id UUID REFERENCES warehouses(id),
+    movement_type VARCHAR(50) NOT NULL, -- 'RECEIPT', 'SALE_DEPLETION', 'SALE_ROLLBACK', 'TRANSFER_OUT', 'TRANSFER_IN', 'WASTE', 'COUNT_ADJUSTMENT', 'RETURN'
+    quantity NUMERIC(14, 4) NOT NULL,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    unit_cost NUMERIC(12, 4) NOT NULL DEFAULT 0.0,
+    total_cost NUMERIC(12, 2) NOT NULL DEFAULT 0.0,
+    reference_type VARCHAR(50), -- 'ORDER', 'PURCHASE_ORDER', 'TRANSFER', 'WASTE_REPORT', 'STOCK_TAKE', 'MANUAL'
+    reference_id VARCHAR(255),
+    idempotency_key VARCHAR(255) UNIQUE,
+    actor_id UUID REFERENCES users(id),
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 9. Inventory Transfers
+CREATE TABLE IF NOT EXISTS inventory_transfers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    transfer_number VARCHAR(50) NOT NULL,
+    source_warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    destination_warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'REQUESTED', -- 'REQUESTED', 'APPROVED', 'IN_TRANSIT', 'COMPLETED', 'REJECTED'
+    requested_by UUID REFERENCES users(id),
+    approved_by UUID REFERENCES users(id),
+    dispatched_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inventory_transfer_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    transfer_id UUID NOT NULL REFERENCES inventory_transfers(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    quantity NUMERIC(14, 4) NOT NULL,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    received_quantity NUMERIC(14, 4),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 10. Waste Tracking & Spoilage
+CREATE TABLE IF NOT EXISTS waste_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    quantity NUMERIC(14, 4) NOT NULL,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    waste_reason VARCHAR(50) NOT NULL, -- 'EXPIRED', 'SPOILED', 'PREP_MISTAKE', 'DROPPED', 'SPILLAGE', 'THEFT', 'SAMPLE'
+    cost_impact NUMERIC(12, 2) NOT NULL DEFAULT 0.0,
+    reported_by UUID REFERENCES users(id),
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 11. Stock Counts & Physical Inventory Reconciliation
+CREATE TABLE IF NOT EXISTS inventory_counts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    count_number VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'IN_PROGRESS', -- 'IN_PROGRESS', 'COMPLETED', 'RECONCILED', 'CANCELLED'
+    counted_by UUID REFERENCES users(id),
+    reconciled_by UUID REFERENCES users(id),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    reconciled_at TIMESTAMPTZ,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inventory_count_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    count_id UUID NOT NULL REFERENCES inventory_counts(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    system_quantity NUMERIC(14, 4) NOT NULL,
+    counted_quantity NUMERIC(14, 4) NOT NULL,
+    variance NUMERIC(14, 4) NOT NULL,
+    unit_id VARCHAR(50) NOT NULL REFERENCES units_of_measure(id),
+    unit_cost NUMERIC(12, 4) NOT NULL DEFAULT 0.0,
+    variance_cost NUMERIC(12, 2) NOT NULL DEFAULT 0.0,
+    reconciled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for Phase 5
+CREATE INDEX IF NOT EXISTS idx_inventory_stocks_wh ON inventory_stocks(warehouse_id, ingredient_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_ing ON stock_movements(ingredient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_ref ON stock_movements(reference_type, reference_id);
+CREATE INDEX IF NOT EXISTS idx_recipes_product ON recipes(product_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON purchase_orders(supplier_id, status);
+CREATE INDEX IF NOT EXISTS idx_waste_records_branch ON waste_records(branch_id, created_at DESC);
+
+-- RLS Policies for Phase 5
+ALTER TABLE units_of_measure ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unit_conversions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ingredients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE warehouses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE storage_locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_stocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recipe_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE supplier_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE purchase_order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE goods_receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE goods_receipt_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_transfers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_transfer_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waste_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_counts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_count_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_isolation_ingredients ON ingredients;
+CREATE POLICY tenant_isolation_ingredients ON ingredients
+    AS RESTRICTIVE
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
+DROP POLICY IF EXISTS tenant_isolation_warehouses ON warehouses;
+CREATE POLICY tenant_isolation_warehouses ON warehouses
+    AS RESTRICTIVE
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
+DROP POLICY IF EXISTS tenant_isolation_stocks ON inventory_stocks;
+CREATE POLICY tenant_isolation_stocks ON inventory_stocks
+    AS RESTRICTIVE
+    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+
