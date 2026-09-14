@@ -515,11 +515,40 @@ export class MemoryDatabase {
     });
 
     // ── Phase 4 Seed Data: Delivery, Drivers, Fleet & Batching ──
+    const managerUserId = "usr-04-manager";
+    this.insert("users", {
+      id: managerUserId,
+      email: "manager@israeliburgers.co.il",
+      password_hash: bcrypt.hashSync("Password123!", 8),
+      pin_code_hash: bcrypt.hashSync("1234", 8),
+      first_name: "Moti",
+      last_name: "Manager",
+      phone: "050-9988112",
+      is_active: true,
+      email_verified: true,
+      pin_failed_attempts: 0,
+    });
+
+    this.insert("user_organizations", {
+      user_id: managerUserId,
+      organization_id: orgId,
+      role: "MANAGER",
+    });
+
+    this.insert("user_branch_assignments", {
+      user_id: managerUserId,
+      organization_id: orgId,
+      restaurant_id: restId,
+      branch_id: branchId,
+      role: "MANAGER",
+      is_primary: true,
+    });
+
     const driverUserId = "usr-02-driver";
     this.insert("users", {
       id: driverUserId,
-      email: "driver@restotest.co.il",
-      password_hash: bcrypt.hashSync("SecurePassword123!", 8),
+      email: "driver1@israeliburgers.co.il",
+      password_hash: bcrypt.hashSync("Password123!", 8),
       pin_code_hash: bcrypt.hashSync("1234", 8),
       first_name: "Dan",
       last_name: "Driver",
@@ -547,8 +576,8 @@ export class MemoryDatabase {
     const driver2UserId = "usr-03-driver";
     this.insert("users", {
       id: driver2UserId,
-      email: "driver2@restotest.co.il",
-      password_hash: bcrypt.hashSync("SecurePassword123!", 8),
+      email: "driver2@israeliburgers.co.il",
+      password_hash: bcrypt.hashSync("Password123!", 8),
       pin_code_hash: bcrypt.hashSync("5678", 8),
       first_name: "Yossi",
       last_name: "Cohen",

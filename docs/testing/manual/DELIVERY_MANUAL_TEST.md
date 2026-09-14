@@ -9,14 +9,14 @@ This runbook provides end-to-end PowerShell commands for verifying Phase 4 featu
 ```powershell
 $baseUrl = "http://localhost:3000/api/v1"
 
-# 1. Manager Login
+# 1. Manager / Owner Login
 $mgrLogin = Invoke-RestMethod -Uri "$baseUrl/auth/login" -Method POST -ContentType "application/json" -Body (@{
-    email = "manager@israeliburgers.co.il"
-    password = "Password123!"
+    email = "owner@restotest.co.il"
+    password = "SecurePassword123!"
 } | ConvertTo-Json)
-$mgrToken = $mgrLogin.token
-$orgId = $mgrLogin.user.organizationId
-$branchId = $mgrLogin.user.branchId
+$mgrToken = $mgrLogin.session.token
+$orgId = "1b9ca808-44c7-4fec-b94f-05c133c959f0"
+$branchId = "be7c3e30-b28b-4d23-9d78-b56b545351f5"
 
 $mgrHeaders = @{
     "Authorization" = "Bearer $mgrToken"
@@ -26,10 +26,10 @@ $mgrHeaders = @{
 
 # 2. Driver 1 Login
 $d1Login = Invoke-RestMethod -Uri "$baseUrl/auth/login" -Method POST -ContentType "application/json" -Body (@{
-    email = "driver1@israeliburgers.co.il"
-    password = "Password123!"
+    email = "driver@restotest.co.il"
+    password = "SecurePassword123!"
 } | ConvertTo-Json)
-$d1Token = $d1Login.token
+$d1Token = $d1Login.session.token
 $d1Headers = @{
     "Authorization" = "Bearer $d1Token"
     "x-organization-id" = $orgId
@@ -38,10 +38,10 @@ $d1Headers = @{
 
 # 3. Driver 2 Login
 $d2Login = Invoke-RestMethod -Uri "$baseUrl/auth/login" -Method POST -ContentType "application/json" -Body (@{
-    email = "driver2@israeliburgers.co.il"
-    password = "Password123!"
+    email = "driver2@restotest.co.il"
+    password = "SecurePassword123!"
 } | ConvertTo-Json)
-$d2Token = $d2Login.token
+$d2Token = $d2Login.session.token
 $d2Headers = @{
     "Authorization" = "Bearer $d2Token"
     "x-organization-id" = $orgId
