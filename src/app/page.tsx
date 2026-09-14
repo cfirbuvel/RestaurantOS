@@ -1,157 +1,735 @@
-import React from "react";
-import { StatusBadge, OrderStatus } from "@/components/ui/status-badge";
-import { ShieldCheck, Server, Database, Lock, Radio } from "lucide-react";
+"use client";
 
-export default function HomePage() {
-  const statuses: OrderStatus[] = [
-    "NEW",
-    "APPROVED",
-    "IN_PREPARATION",
-    "READY",
-    "OUT_FOR_DELIVERY",
-    "DELIVERED",
-    "CANCELLED",
-  ];
+import React, { useState } from "react";
+import {
+  ShieldCheck,
+  Server,
+  Database,
+  Lock,
+  Radio,
+  ChefHat,
+  Bike,
+  Package,
+  Layers,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Flame,
+  MapPin,
+  TrendingUp,
+  Boxes,
+  Truck,
+  Sparkles,
+  ArrowRight,
+  RefreshCw,
+  Navigation,
+  Eye,
+  Check,
+  X,
+  Sliders,
+} from "lucide-react";
+import { StatusBadge, OrderStatus } from "@/components/ui/status-badge";
+
+type ActiveTab = "overview" | "orders" | "kds" | "delivery" | "inventory";
+
+export default function OperationalDashboard() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+
+  // Sample KDS tickets state for interactive demonstration
+  const [tickets, setTickets] = useState([
+    {
+      id: "tkt-101",
+      orderNumber: "ORD-1042",
+      station: "burgers",
+      stationName: "עמדת המבורגרים",
+      items: ["2x המבורגר שורטק 220ג (M, צ'דר)", "1x דאבל בורגר (WD, ביצת עין)"],
+      elapsedSeconds: 340,
+      targetSeconds: 900,
+      slaStatus: "ON_TIME",
+      status: "IN_PREPARATION",
+    },
+    {
+      id: "tkt-102",
+      orderNumber: "ORD-1043",
+      station: "sides",
+      stationName: "עמדת צ'יפס ותוספות",
+      items: ["2x צ'יפס בלגי פריך", "1x טבעות בצל"],
+      elapsedSeconds: 780,
+      targetSeconds: 900,
+      slaStatus: "NEAR_SLA",
+      status: "IN_PREPARATION",
+    },
+    {
+      id: "tkt-103",
+      orderNumber: "ORD-1040",
+      station: "drinks",
+      stationName: "אקספו ושתייה",
+      items: ["2x קוקה קולה 330 מ\"ל", "1x פנטה"],
+      elapsedSeconds: 980,
+      targetSeconds: 600,
+      slaStatus: "SLA_EXCEEDED",
+      status: "QUEUED",
+    },
+  ]);
+
+  // Sample Driver Queue state
+  const [driverQueue, setDriverQueue] = useState([
+    { position: 1, name: "דני כהן (Dan)", id: "usr-02-driver", status: "ON_SHIFT", assignment: "AVAILABLE", availableSince: "לפני 25 דקות", vehicle: "קטנוע Kymco 125" },
+    { position: 2, name: "יוסי לוי (Yossi)", id: "usr-03-driver", status: "ON_SHIFT", assignment: "AVAILABLE", availableSince: "לפני 12 דקות", vehicle: "יונדאי i10" },
+    { position: 3, name: "רונן אלון (Ronen)", id: "usr-04-driver", status: "BREAK", assignment: "UNAVAILABLE", availableSince: "בהפסקה", vehicle: "אופניים חשמליים" },
+  ]);
+
+  // Sample Batch Recommendation state
+  const [batchActionStatus, setBatchActionStatus] = useState<string | null>(null);
+
+  const bumpTicket = (ticketId: string) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status: t.status === "READY" ? "COMPLETED" : "READY" } : t))
+    );
+  };
 
   return (
-    <main className="min-h-screen bg-surface p-6 sm:p-10 font-sans" dir="rtl">
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* Header Section */}
-        <header className="border-b border-gray-200 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <main className="min-h-screen bg-surface p-4 sm:p-8 font-sans" dir="rtl">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Top Operational Header */}
+        <header className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-container text-white mb-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                RestaurantOS — Phase 1: Production Foundation
-              </span>
-              <h1 className="text-3xl font-extrabold tracking-tight text-primary">
-                מערכת הפעלה למסעדות ורשתות מזון
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-container text-white">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  RestaurantOS — Unified Core v1.4
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  סניף: ראשי תל אביב
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  בידוד RLS פעיל
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                מרכז שליטה ובקרה תפעולי
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                מערך תשתית תפעולי רב-ארגוני, אבטחה קפדנית, ו-RBAC מבוסס תפקידים.
+                מערך לוגיסטיקה, מטבח (KDS), ניתוב משלוחים חכם וניהול רשת מסעדות בזמן אמת.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-3 w-3 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-              <span className="text-xs font-bold text-gray-700">ליבת המערכת פעילה</span>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3.5 py-2 rounded-lg text-xs font-bold text-gray-700">
+                <span className="flex h-2.5 w-2.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span>WebSocket חי (כרטיס 60s)</span>
+              </div>
+              <div className="bg-primary text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm">
+                <Clock className="w-4 h-4 text-emerald-400" />
+                <span>שעון משמרת: 01:45</span>
+              </div>
             </div>
           </div>
+
+          {/* Navigation Tabs */}
+          <nav className="flex flex-wrap gap-2 mt-6 pt-5 border-t border-gray-100">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
+                activeTab === "overview"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              סקירה כללית & תשתית
+            </button>
+            <button
+              onClick={() => setActiveTab("orders")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
+                activeTab === "orders"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              הזמנות אוניברסליות & CRM
+            </button>
+            <button
+              onClick={() => setActiveTab("kds")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
+                activeTab === "kds"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <ChefHat className="w-4 h-4" />
+              מטבח KDS & מסילות כרטיסים
+            </button>
+            <button
+              onClick={() => setActiveTab("delivery")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
+                activeTab === "delivery"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Bike className="w-4 h-4" />
+              משלוחים, תור FIFO & צי רכב
+            </button>
+            <button
+              onClick={() => setActiveTab("inventory")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
+                activeTab === "inventory"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Boxes className="w-4 h-4" />
+              מלאי, מתכוני BOM & מחסנים (Phase 5)
+            </button>
+          </nav>
         </header>
 
-        {/* Foundation Metrics Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex items-start gap-4">
-            <div className="p-2.5 rounded-md bg-blue-50 text-blue-600">
-              <Server className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Multi-Tenancy</h3>
-              <p className="text-lg font-bold text-primary mt-0.5">Org / Rest / Branch</p>
-              <p className="text-xs text-gray-500 mt-1">בידוד RLS מלא ברמת מסד הנתונים</p>
-            </div>
-          </div>
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === "overview" && (
+          <div className="space-y-6">
+            {/* Quick Metrics */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-blue-50 text-blue-600">
+                  <Server className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Multi-Tenancy</h3>
+                  <p className="text-xl font-black text-primary mt-0.5">Org / Branch</p>
+                  <p className="text-xs text-gray-500 mt-1">בידוד PostgreSQL RLS מלא</p>
+                </div>
+              </div>
 
-          <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex items-start gap-4">
-            <div className="p-2.5 rounded-md bg-purple-50 text-purple-600">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Authentication</h3>
-              <p className="text-lg font-bold text-primary mt-0.5">Cookies + PIN</p>
-              <p className="text-xs text-gray-500 mt-1">עוגיות HttpOnly ונעילת טרמינל</p>
-            </div>
-          </div>
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-purple-50 text-purple-600">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Authentication</h3>
+                  <p className="text-xl font-black text-primary mt-0.5">RBAC (12 Roles)</p>
+                  <p className="text-xs text-gray-500 mt-1">עוגיות HttpOnly + PIN מהיר</p>
+                </div>
+              </div>
 
-          <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex items-start gap-4">
-            <div className="p-2.5 rounded-md bg-amber-50 text-amber-600">
-              <Database className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Outbox & Audit</h3>
-              <p className="text-lg font-bold text-primary mt-0.5">Transactional</p>
-              <p className="text-xs text-gray-500 mt-1">תיעוד Immutable והעברה ל-Pub/Sub</p>
-            </div>
-          </div>
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-amber-50 text-amber-600">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Audit & Outbox</h3>
+                  <p className="text-xl font-black text-primary mt-0.5">Transactional</p>
+                  <p className="text-xs text-gray-500 mt-1">100% Immutable Event Ledger</p>
+                </div>
+              </div>
 
-          <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex items-start gap-4">
-            <div className="p-2.5 rounded-md bg-emerald-50 text-emerald-600">
-              <Radio className="w-5 h-5" />
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
+                  <Radio className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Realtime Mesh</h3>
+                  <p className="text-xl font-black text-primary mt-0.5">Redis Ephemeral</p>
+                  <p className="text-xs text-gray-500 mt-1">כרטיסי אימות ערוץ ל-60 שניות</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Architecture Evolution Grid */}
+            <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-blue-600" />
+                  סטטוס שלבי הפיתוח (Phased Roadmap Alignment)
+                </h2>
+                <span className="text-xs font-bold px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  שלבים 1 עד 4 הושלמו בהצלחה
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-emerald-800">Phase 1: Foundation</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">אבטחה, אימות ו-Outbox</p>
+                  <p className="text-xs text-gray-600">
+                    בידוד ארגוני, טוקנים מאובטחים, Rate Limiter, ואימות Webhooks בחתימת HMAC-SHA256.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-emerald-800">Phase 2: CRM & Orders</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">הזמנות אוניברסליות ותפריט</p>
+                  <p className="text-xs text-gray-600">
+                    מנוע הזמנות עמיד, ניהול מודולרי של תוספות ומידות עשייה, וכרטיס לקוח VIP.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-emerald-800">Phase 3: KDS</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">מסילות כרטיסים ו-SLA</p>
+                  <p className="text-xs text-gray-600">
+                    ניתוב פריטים לפי תחנות עבודה (המבורגר, צ'יפס, שתייה), ניטור זמנים ויזואלי והתראות חריגה.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-emerald-800">Phase 4: Delivery & Fleet</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">משלוחים, תור FIFO ואיחוד חכם</p>
+                  <p className="text-xs text-gray-600">
+                    מודל נהג 3-ממדי, שיוך עצמי מוגן קונפליקטים (409), טלמטריה וגאופנס 150מ' מייעץ.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-blue-300 bg-blue-50/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-blue-800">Phase 5: Inventory & BOM</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-600 text-white">השלב הבא</span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">מלאי, עצי מוצר וספקים</p>
+                  <p className="text-xs text-gray-600">
+                    מדיניות ניפוק מוגדרת (ON_ACCEPTED), המרת יחידות מידה, תנועות מלאי ומניעת מלאי שלילי.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-gray-200 bg-gray-50 space-y-2 opacity-75">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-600">Phase 6: Marketing & Loyalty</span>
+                    <span className="text-xs font-medium text-gray-500">מתוכנן</span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-700">קמפיינים, מועדון והטבות</p>
+                  <p className="text-xs text-gray-500">
+                    מנוע חוקים להנחות, צבירת נקודות חבר מועדון וסגמנטציה מתקדמת.
+                  </p>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 2: UNIVERSAL ORDERS */}
+        {activeTab === "orders" && (
+          <div className="space-y-6">
+            <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-primary">יומן הזמנות פעיל (Universal Orders Ledger)</h2>
+                  <p className="text-xs text-gray-500">
+                    כל ההזמנות מכל הערוצים (משלוח, טייק אוויי, ישיבה במסעדה) במבנה נתונים אחיד.
+                  </p>
+                </div>
+                <button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-gray-800 flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  רענן הזמנות
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                    <tr>
+                      <th className="p-3">מספר הזמנה</th>
+                      <th className="p-3">ערוץ</th>
+                      <th className="p-3">לקוח / טלפון</th>
+                      <th className="p-3">פירוט פריטים</th>
+                      <th className="p-3">סכום כולל</th>
+                      <th className="p-3">סטטוס תפעולי</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr className="hover:bg-gray-50/75">
+                      <td className="p-3 font-bold text-primary">ORD-1042</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">משלוח (Delivery)</span>
+                      </td>
+                      <td className="p-3 font-medium">עומר לוי (050-7776655)</td>
+                      <td className="p-3 text-gray-700">המבורגר שורטק (M) + צ'יפס</td>
+                      <td className="p-3 font-bold tabular-nums">₪87.00</td>
+                      <td className="p-3">
+                        <StatusBadge status="IN_PREPARATION" />
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-gray-50/75">
+                      <td className="p-3 font-bold text-primary">ORD-1041</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">ישיבה (Dine-In T-4)</span>
+                      </td>
+                      <td className="p-3 font-medium">דני כהן (VIP)</td>
+                      <td className="p-3 text-gray-700">2x דאבל בורגר + 2x קולה</td>
+                      <td className="p-3 font-bold tabular-nums">₪168.00</td>
+                      <td className="p-3">
+                        <StatusBadge status="READY" />
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-gray-50/75">
+                      <td className="p-3 font-bold text-primary">ORD-1040</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">איסוף (Takeaway)</span>
+                      </td>
+                      <td className="p-3 font-medium">מיכל אברהם</td>
+                      <td className="p-3 text-gray-700">המבורגר טבעוני + טבעות בצל</td>
+                      <td className="p-3 font-bold tabular-nums">₪64.00</td>
+                      <td className="p-3">
+                        <StatusBadge status="DELIVERED" />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 3: KITCHEN DISPLAY SYSTEM */}
+        {activeTab === "kds" && (
+          <div className="space-y-6">
+            {/* KDS Station Headers */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {tickets.map((ticket) => {
+                const isOverdue = ticket.slaStatus === "SLA_EXCEEDED";
+                const isWarning = ticket.slaStatus === "NEAR_SLA";
+
+                return (
+                  <div
+                    key={ticket.id}
+                    className={`rounded-xl border shadow-sm overflow-hidden flex flex-col justify-between transition-all ${
+                      isOverdue
+                        ? "border-red-500 bg-red-50/20"
+                        : isWarning
+                        ? "border-amber-400 bg-amber-50/20"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    {/* Header */}
+                    <div
+                      className={`p-4 border-b flex items-center justify-between ${
+                        isOverdue
+                          ? "bg-red-600 text-white font-black"
+                          : isWarning
+                          ? "bg-amber-100 text-amber-900 font-bold border-amber-200"
+                          : "bg-gray-50 text-gray-800 font-bold border-gray-200"
+                      }`}
+                    >
+                      <div>
+                        <span className="text-xs uppercase tracking-wider block opacity-90">{ticket.stationName}</span>
+                        <span className="text-lg">{ticket.orderNumber}</span>
+                      </div>
+                      <div className="text-left font-mono text-sm tabular-nums">
+                        {isOverdue && <span className="animate-pulse mr-1">⚠️ +</span>}
+                        {Math.floor(ticket.elapsedSeconds / 60)}:
+                        {(ticket.elapsedSeconds % 60).toString().padStart(2, "0")}
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div className="p-4 space-y-3 flex-1">
+                      <div className="space-y-1.5">
+                        {ticket.items.map((item, idx) => (
+                          <div key={idx} className="text-xs font-bold text-gray-800 flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span>{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="p-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-500">
+                        {ticket.status === "READY" ? "מוכן לחלוקה" : "בהכנה בפס"}
+                      </span>
+                      <button
+                        onClick={() => bumpTicket(ticket.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                          ticket.status === "READY"
+                            ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                            : "bg-primary text-white hover:bg-gray-800"
+                        }`}
+                      >
+                        {ticket.status === "READY" ? "סיים הגשה (Bump)" : "סמן כמוכן (Ready)"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Realtime Handshake</h3>
-              <p className="text-lg font-bold text-primary mt-0.5">60s Single-Use</p>
-              <p className="text-xs text-gray-500 mt-1">כרטיסי אימות מוגבלי זמן ב-Redis</p>
+          </div>
+        )}
+
+        {/* TAB 4: DELIVERY & FLEET */}
+        {activeTab === "delivery" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Column 1 & 2: FIFO Queue & Active Deliveries */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* FIFO Driver Queue */}
+                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                      <Bike className="w-5 h-5 text-blue-600" />
+                      תור זמינות נהגים (Deterministic FIFO Queue)
+                    </h2>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                      סדר עדיפות לפי available_since
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-xs">
+                      <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                        <tr>
+                          <th className="p-3">מיקום בתור</th>
+                          <th className="p-3">שם השליח</th>
+                          <th className="p-3">משמרת</th>
+                          <th className="p-3">זמינות</th>
+                          <th className="p-3">כלי רכב משויך</th>
+                          <th className="p-3">זמין מאז</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {driverQueue.map((drv) => (
+                          <tr key={drv.id} className="hover:bg-gray-50/75">
+                            <td className="p-3 font-extrabold text-blue-600 tabular-nums">#{drv.position}</td>
+                            <td className="p-3 font-bold text-gray-900">{drv.name}</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                drv.status === "ON_SHIFT" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                              }`}>
+                                {drv.status === "ON_SHIFT" ? "במשמרת" : "בהפסקה"}
+                              </span>
+                            </td>
+                            <td className="p-3 font-medium text-gray-600">
+                              {drv.assignment === "AVAILABLE" ? "זמין להקצאה" : "לא זמין"}
+                            </td>
+                            <td className="p-3 text-gray-700 font-medium">{drv.vehicle}</td>
+                            <td className="p-3 text-gray-500">{drv.availableSince}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                {/* Smart Batching Recommendation Card */}
+                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-amber-500" />
+                      <h2 className="text-lg font-bold text-primary">הצעת איחוד משלוחים חכמה (Advisory Batch)</h2>
+                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                      ציון התאמה: 88.4 / 100
+                    </span>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3 text-xs">
+                    <div className="flex justify-between items-center text-gray-700">
+                      <span className="font-bold">הזמנות מועמדות לאיחוד:</span>
+                      <span className="font-mono font-bold text-primary">ORD-1042 + ORD-1045 (רחוב דיזנגוף 50 & 72)</span>
+                    </div>
+
+                    {/* Breakdown bars */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                      <div className="bg-white p-2.5 rounded border border-gray-200 text-center">
+                        <span className="text-gray-500 block text-[10px]">קרבה גיאוגרפית</span>
+                        <span className="font-black text-emerald-600 text-sm">94%</span>
+                      </div>
+                      <div className="bg-white p-2.5 rounded border border-gray-200 text-center">
+                        <span className="text-gray-500 block text-[10px]">יישור אזימוט (35°)</span>
+                        <span className="font-black text-blue-600 text-sm">91%</span>
+                      </div>
+                      <div className="bg-white p-2.5 rounded border border-gray-200 text-center">
+                        <span className="text-gray-500 block text-[10px]">סנכרון מטבח</span>
+                        <span className="font-black text-purple-600 text-sm">85%</span>
+                      </div>
+                      <div className="bg-white p-2.5 rounded border border-gray-200 text-center">
+                        <span className="text-gray-500 block text-[10px]">מרווח SLA</span>
+                        <span className="font-black text-amber-600 text-sm">82%</span>
+                      </div>
+                    </div>
+
+                    {batchActionStatus ? (
+                      <div className="p-3 bg-emerald-50 text-emerald-800 rounded font-bold text-center border border-emerald-200">
+                        {batchActionStatus}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 pt-2">
+                        <button
+                          onClick={() => setBatchActionStatus("האיחוד אושר בהצלחה ושויך לנהג הראשון בתור (#1 דני כהן)")}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <Check className="w-4 h-4" />
+                          אשר איחוד משלוח (Approve Batch)
+                        </button>
+                        <button
+                          onClick={() => setBatchActionStatus("האיחוד נדחה — נרשם ביומן ההחלטות ללמידה עתידית")}
+                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <X className="w-4 h-4" />
+                          דחה איחוד (Reject)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>
+
+              {/* Column 3: Live Telematics & Geofence Rule */}
+              <div className="space-y-6">
+                <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                    <Navigation className="w-5 h-5 text-blue-600" />
+                    <h2 className="text-lg font-bold text-primary">טלמטריה וגאופנס צי רכב</h2>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900">
+                      <span className="font-bold block mb-1">כלל הברזל של המערכת:</span>
+                      <span className="font-mono text-xs font-semibold">Telemetry != Business Truth</span>
+                      <p className="text-[11px] text-blue-800 mt-1">
+                        כניסה לרדיוס 150 מ' מעדכנת סטטוס ל-ARRIVED_AT_CUSTOMER_AREA בלבד, ולעולם לא מסמנת DELIVERED ללא אישור אנושי / חתימה.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+                      <div className="flex justify-between items-center font-bold text-gray-800">
+                        <span>רכב: 11-222-33 (קטנוע)</span>
+                        <span className="text-emerald-600 flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                          משדר Online
+                        </span>
+                      </div>
+                      <div className="text-gray-600 space-y-0.5">
+                        <p>שליח משויך: דני כהן</p>
+                        <p>סוללת איתוראן: 98%</p>
+                        <p>מהירות נוכחית: 34 קמ"ש</p>
+                        <p>מיקום נוכחי: 32.0626, 34.7703 (דיזנגוף 50)</p>
+                        <p className="font-bold text-emerald-700 mt-1">סטטוס גאופנס: בתוך רדיוס 150 מ' מהיעד</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
             </div>
           </div>
-        </section>
+        )}
 
-        {/* Stitch Design System Preview */}
-        <section className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
-          <div className="border-b border-gray-100 pb-3">
-            <h2 className="text-lg font-bold text-primary">סטטוסים תפעוליים (Stitch Tri-Factor Badges)</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              שילוב של גוון רקע 10%, מסגרת 100%, אייקון ייעודי ותווית עברית חד-משמעית.
-            </p>
-          </div>
+        {/* TAB 5: INVENTORY & PHASE 5 PREVIEW */}
+        {activeTab === "inventory" && (
+          <div className="space-y-6">
+            <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Boxes className="w-6 h-6 text-blue-600" />
+                  <div>
+                    <h2 className="text-lg font-bold text-primary">מערך מלאי, עצי מוצר (BOM) ומחסנים — Phase 5</h2>
+                    <p className="text-xs text-gray-500">
+                      מעקב רב-מחסני, המרת יחידות מידה, ניפוק אוטומטי מבוסס מתכונים, ופקודות רכש ספקים.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  מוכן לביצוע (Execution Ready)
+                </span>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            {statuses.map((st) => (
-              <StatusBadge key={st} status={st} />
-            ))}
-          </div>
-        </section>
+              {/* Phase 5 Features Architecture Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
+                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                    <Sliders className="w-4 h-4 text-blue-600" />
+                    <span>מדיניות ניפוק מלאי מוגדרת</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    ברירת מחדל קנונית: <span className="font-bold text-blue-700">ON_ACCEPTED</span> (ניפוק מידי עם אישור ההזמנה לשמירת חומרי גלם), עם תמיכה ב-ON_PREPARATION_START וב-ON_FULFILLMENT.
+                  </p>
+                </div>
 
-        {/* API Health & Endpoints */}
-        <section className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-bold text-primary mb-3">נקודות קצה פעילות (Foundation API v1)</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
-              <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
-                <tr>
-                  <th className="py-2.5 px-3">Method</th>
-                  <th className="py-2.5 px-3">Endpoint</th>
-                  <th className="py-2.5 px-3">תיאור</th>
-                  <th className="py-2.5 px-3">אבטחה</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 font-mono">
-                <tr>
-                  <td className="py-2.5 px-3 font-bold text-emerald-600">POST</td>
-                  <td className="py-2.5 px-3">/api/v1/auth/register</td>
-                  <td className="py-2.5 px-3 font-sans">רישום משתמש וארגון חדש</td>
-                  <td className="py-2.5 px-3 font-sans">Zod Schema Validation</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-bold text-emerald-600">POST</td>
-                  <td className="py-2.5 px-3">/api/v1/auth/login</td>
-                  <td className="py-2.5 px-3 font-sans">כניסה עם סיסמה והנפקת עוגיית HttpOnly</td>
-                  <td className="py-2.5 px-3 font-sans">Rate-Limited + Cookie</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-bold text-emerald-600">POST</td>
-                  <td className="py-2.5 px-3">/api/v1/auth/pin-login</td>
-                  <td className="py-2.5 px-3 font-sans">החלפת עובדים מהירה בטרמינל עם קוד PIN</td>
-                  <td className="py-2.5 px-3 font-sans">5 נסיונות ← נעילה ל-15 דקות</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-bold text-blue-600">GET</td>
-                  <td className="py-2.5 px-3">/api/v1/auth/me</td>
-                  <td className="py-2.5 px-3 font-sans">פרופיל משתמש והרשאות הסשן הנוכחי</td>
-                  <td className="py-2.5 px-3 font-sans">Session / Bearer Token</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-bold text-purple-600">POST</td>
-                  <td className="py-2.5 px-3">/api/v1/realtime/ticket</td>
-                  <td className="py-2.5 px-3 font-sans">הנפקת כרטיס חיבור חד-פעמי ל-WebSocket (60s)</td>
-                  <td className="py-2.5 px-3 font-sans">Redis Single-Use Ticket</td>
-                </tr>
-              </tbody>
-            </table>
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
+                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                    <Layers className="w-4 h-4 text-purple-600" />
+                    <span>עצי מוצר (BOM) והמרת יחידות</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    פירוק מנות לרכיבים (גרמים, מיליליטרים, יחידות), מתכוני משנה, אחוזי פחת (Yield Loss) ושקלול תוספות.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
+                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                    <Truck className="w-4 h-4 text-amber-600" />
+                    <span>ספקים, פקודות רכש ופחת</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    קבלת סחורה אידמפוטנטית, מעקב פחת לפי סיבות (פג תוקף, טעות הכנה), והעברות בין מחסנים.
+                  </p>
+                </div>
+              </div>
+
+              {/* Sample BOM Explosion Table */}
+              <div className="pt-4 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-gray-800 mb-2">דוגמת עץ מוצר (BOM Recipe Explosion) — המבורגר קלאסי 220 גרם</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right text-xs">
+                    <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                      <tr>
+                        <th className="p-2.5">חומר גלם (Ingredient)</th>
+                        <th className="p-2.5">יחידת מידה</th>
+                        <th className="p-2.5">כמות למנה</th>
+                        <th className="p-2.5">אחוז פחת (Yield)</th>
+                        <th className="p-2.5">מחסן ניפוק</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      <tr>
+                        <td className="p-2.5 font-bold">קציצת בקר איכותי 100%</td>
+                        <td className="p-2.5">גרם (G)</td>
+                        <td className="p-2.5 tabular-nums font-bold">220</td>
+                        <td className="p-2.5 tabular-nums">95%</td>
+                        <td className="p-2.5">מקרר פס הכנה (Kitchen)</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-bold">לחמניית בריוש שומשום</td>
+                        <td className="p-2.5">יחידה (Unit)</td>
+                        <td className="p-2.5 tabular-nums font-bold">1</td>
+                        <td className="p-2.5 tabular-nums">100%</td>
+                        <td className="p-2.5">מחסן יבש (Dry Storage)</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-bold">רוטב הבית שורטק</td>
+                        <td className="p-2.5">מיליליטר (mL)</td>
+                        <td className="p-2.5 tabular-nums font-bold">30</td>
+                        <td className="p-2.5 tabular-nums">98%</td>
+                        <td className="p-2.5">מקרר פס הכנה (Kitchen)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
+        )}
+
+        {/* Footer */}
+        <footer className="text-center text-xs text-gray-500 pt-6 pb-2 border-t border-gray-200">
+          <p>RestaurantOS Architecture & Development Platform © 2026 ShorTech. All rights reserved.</p>
+        </footer>
       </div>
     </main>
   );
