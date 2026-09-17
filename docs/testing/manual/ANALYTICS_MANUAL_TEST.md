@@ -15,10 +15,31 @@ Expected output: **2 test files passed, 9 tests passed**.
 
 ## 2. Testing Endpoints & CLI Commands
 
+### 2.0 Obtain Session Token (PowerShell / Windows)
+First, log in using the seed owner credentials to get a session token:
+
+```powershell
+$loginRes = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/auth/login" -Method POST -Headers @{ "Content-Type" = "application/json" } -Body (@{ email = "owner@restotest.co.il"; password = "SecurePassword123!" } | ConvertTo-Json)
+$token = $loginRes.session.token
+$headers = @{
+    "Authorization" = "Bearer $token"
+    "x-branch-id"   = "be7c3e30-b28b-4d23-9d78-b56b545351f5"
+}
+```
+
+---
+
 ### 2.1 Executive Sales Dashboard
+
+**PowerShell (`Invoke-RestMethod`):**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/analytics/dashboard" -Method GET -Headers $headers | ConvertTo-Json -Depth 5
+```
+
+**Using `curl.exe` (Windows CMD / Git Bash / PowerShell):**
 ```bash
-curl -X GET "http://localhost:3000/api/v1/analytics/dashboard" \
-  -H "Authorization: Bearer <session_token>" \
+curl.exe -X GET "http://localhost:3000/api/v1/analytics/dashboard" `
+  -H "Authorization: Bearer $token" `
   -H "x-branch-id: be7c3e30-b28b-4d23-9d78-b56b545351f5"
 ```
 **Verification Points**:
@@ -27,28 +48,23 @@ curl -X GET "http://localhost:3000/api/v1/analytics/dashboard" \
 - `channelBreakdown` groups revenues by `WEB`, `KIOSK`, `WOLT`, `10BIS`, `PHONE`.
 
 ### 2.2 Kitchen & KDS Performance
-```bash
-curl -X GET "http://localhost:3000/api/v1/analytics/kitchen" \
-  -H "Authorization: Bearer <session_token>" \
-  -H "x-branch-id: be7c3e30-b28b-4d23-9d78-b56b545351f5"
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/analytics/kitchen" -Method GET -Headers $headers | ConvertTo-Json -Depth 5
 ```
 **Verification Points**:
 - Returns `averagePrepTimeMinutes`, `slaExceededRate`, and `stationThroughput` by station (`GRILL`, `SIDES`, `DRINKS`).
 
 ### 2.3 Hourly Heatmap & Peak Hours
-```bash
-curl -X GET "http://localhost:3000/api/v1/analytics/heatmap" \
-  -H "Authorization: Bearer <session_token>" \
-  -H "x-branch-id: be7c3e30-b28b-4d23-9d78-b56b545351f5"
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/analytics/heatmap" -Method GET -Headers $headers | ConvertTo-Json -Depth 5
 ```
 **Verification Points**:
 - Returns 168 data points (7 days × 24 hours).
 - Returns `peakHours.busiestHours` and `peakHours.quietHours`.
 
 ### 2.4 End of Day (EOD) Z-Report Generation
-```bash
-curl -X GET "http://localhost:3000/api/v1/analytics/reports/eod?branchId=be7c3e30-b28b-4d23-9d78-b56b545351f5" \
-  -H "Authorization: Bearer <session_token>"
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/analytics/reports/eod?branchId=be7c3e30-b28b-4d23-9d78-b56b545351f5" -Method GET -Headers $headers | ConvertTo-Json -Depth 5
 ```
 **Verification Points**:
 - Returns immutable snapshot with report number format: `Z-YYYYMMDD-BRANCH`.
@@ -57,18 +73,16 @@ curl -X GET "http://localhost:3000/api/v1/analytics/reports/eod?branchId=be7c3e3
 
 ### 2.5 Cash Drawer Session Reconciliation
 1. **Open Session**:
-```bash
-curl -X POST "http://localhost:3000/api/v1/analytics/cash-drawer" \
-  -H "Authorization: Bearer <session_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "OPEN", "branchId": "be7c3e30-b28b-4d23-9d78-b56b545351f5", "openingFloat": 500}'
+```powershell
+$body = @{ action = "OPEN"; branchId = "be7c3e30-b28b-4d23-9d78-b56b545351f5"; openingFloat = 500 } | ConvertTo-Json
+$openRes = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/analytics/cash-drawer" -Method POST -Headers $headers -ContentType "application/json" -Body $body
+$sessionId = $openRes.data.id
 ```
+
 2. **Close Session & Calculate Variance**:
-```bash
-curl -X POST "http://localhost:3000/api/v1/analytics/cash-drawer" \
-  -H "Authorization: Bearer <session_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "CLOSE", "sessionId": "<session_id>", "countedCash": 612, "notes": "Shift close"}'
+```powershell
+$closeBody = @{ action = "CLOSE"; sessionId = $sessionId; countedCash = 612; notes = "Shift close" } | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/analytics/cash-drawer" -Method POST -Headers $headers -ContentType "application/json" -Body $closeBody | ConvertTo-Json -Depth 5
 ```
 **Verification Points**:
 - `expectedCash` equals `openingFloat + cash_sales`.
