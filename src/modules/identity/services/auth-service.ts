@@ -241,9 +241,36 @@ export class AuthService {
     // Determine organization & role
     const { orgId, role } = await this.resolvePrimaryOrgAndRole(userRow.id, metadata?.organizationId);
 
+    // Resolve the user's primary branch assignment
+    let branchId: string | undefined;
+    if (orgId) {
+      if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+        const assignments = memoryDb.find(
+          "user_branch_assignments",
+          (a: any) => a.user_id === userRow.id && a.organization_id === orgId
+        );
+        if (assignments.length > 0) {
+          const primary = assignments.find((a: any) => a.is_primary) || assignments[0];
+          branchId = primary.branch_id;
+        }
+      } else {
+        const pool = getPostgresPool();
+        const branchRes = await pool.query(
+          `SELECT branch_id FROM user_branch_assignments
+           WHERE user_id = $1 AND organization_id = $2
+           ORDER BY is_primary DESC LIMIT 1`,
+          [userRow.id, orgId]
+        );
+        if (branchRes.rows.length > 0) {
+          branchId = branchRes.rows[0].branch_id;
+        }
+      }
+    }
+
     const session = await this.createSession({
       userId: userRow.id,
       organizationId: orgId,
+      branchId,
       role,
       ipAddress: metadata?.ipAddress,
       userAgent: metadata?.userAgent,

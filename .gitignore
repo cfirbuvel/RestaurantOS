@@ -46,5 +46,7 @@ Thumbs.db
 tmp/
 temp/
 scratch/
+scratch_*.ps1
+.playwright-mcp/
 *.tsbuildinfo
 

@@ -50,12 +50,16 @@ export async function POST(req: NextRequest) {
         email: result.user.email,
         firstName: result.user.firstName,
         lastName: result.user.lastName,
+        organizationId: result.session.organizationId,
+        branchId: result.session.branchId,
       },
       session: {
         id: result.session.id,
         token: result.session.token,
         role: result.session.role,
         permissions: result.session.permissions,
+        organizationId: result.session.organizationId,
+        branchId: result.session.branchId,
         expiresAt: result.session.expiresAt,
       },
     });

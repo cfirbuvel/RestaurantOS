@@ -98,9 +98,18 @@ export type Permission =
   | "campaigns.manage"
   | "campaigns.read"
   | "promotions.manage"
+  | "promotions.read"
+  | "coupons.manage"
+  | "coupons.read"
+  | "loyalty.read"
+  | "segments.manage"
+  | "segments.read"
   // Integrations Hub
   | "integrations.manage"
   | "integrations.read"
+  // Telephony & PBX
+  | "telephony.read"
+  | "telephony.manage"
   // Observability & Auditing
   | "reports.read"
   | "reports.export"
@@ -164,11 +173,19 @@ export const ALL_PERMISSIONS: Permission[] = [
   "customers.read",
   "customers.manage",
   "loyalty.manage",
+  "loyalty.read",
   "campaigns.manage",
   "campaigns.read",
   "promotions.manage",
+  "promotions.read",
+  "coupons.manage",
+  "coupons.read",
+  "segments.manage",
+  "segments.read",
   "integrations.manage",
   "integrations.read",
+  "telephony.read",
+  "telephony.manage",
   "reports.read",
   "reports.export",
   "audit.read",
@@ -214,6 +231,19 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "menu.read",
     "customers.read",
     "customers.manage",
+    // Marketing & Promotions
+    "campaigns.manage",
+    "campaigns.read",
+    "promotions.manage",
+    "promotions.read",
+    "coupons.manage",
+    "coupons.read",
+    "loyalty.manage",
+    "loyalty.read",
+    "segments.manage",
+    "segments.read",
+    "telephony.read",
+    "telephony.manage",
     "reports.read",
     "analytics.view",
   ],
@@ -242,6 +272,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "tables.read",
     "menu.read",
     "customers.read",
+    "telephony.read",
   ],
   DELIVERY_MANAGER: [
     "orders.read",
@@ -287,7 +318,13 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "campaigns.manage",
     "campaigns.read",
     "promotions.manage",
+    "promotions.read",
+    "coupons.manage",
+    "coupons.read",
     "loyalty.manage",
+    "loyalty.read",
+    "segments.manage",
+    "segments.read",
     "customers.read",
     "reports.read",
     "analytics.view",
