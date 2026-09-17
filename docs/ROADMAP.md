@@ -124,9 +124,12 @@ timeline
 ---
 
 ### Phase 10: Analytics, Reporting & Financial Reconciliation
-- [ ] Real-time executive sales dashboards and peak-hour heatmaps.
-- [ ] End-of-Day (EOD) Z-reports and cash drawer reconciliation.
-- [ ] COGS (Cost of Goods Sold) food cost variance reports.
+- [x] Canonical Metrics Dictionary (`/docs/analytics/METRICS_DICTIONARY.md`) aligning all business KPIs.
+- [x] Real-time executive sales dashboards, channel/payment breakdowns, and AOV calculations.
+- [x] 7x24 hourly heatmap matrix and peak-hour density analysis.
+- [x] End-of-Day (EOD) Z-reports with immutable snapshots and cash drawer reconciliation.
+- [x] COGS (Cost of Goods Sold) food cost variance and recipe BOM reports.
+- [x] Phase 00 Section 13 Decision Intelligence telemetry tracking (AI approvals & human overrides).
 
 ---
 

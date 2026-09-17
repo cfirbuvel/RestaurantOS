@@ -750,4 +750,48 @@ CREATE INDEX idx_call_logs_tenant_session ON call_logs (tenant_id, call_session_
 CREATE INDEX idx_call_logs_tenant_caller ON call_logs (tenant_id, caller_number);
 CREATE INDEX idx_call_logs_tenant_customer ON call_logs (tenant_id, customer_id);
 CREATE INDEX idx_call_logs_tenant_started ON call_logs (tenant_id, started_at DESC);
+
+-- 33. Cash Drawer Sessions (Phase 10 Financial Reconciliation)
+CREATE TABLE cash_drawer_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    terminal_id VARCHAR(50) NOT NULL DEFAULT 'POS-01',
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'OPEN', -- 'OPEN', 'CLOSED'
+    opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    closed_at TIMESTAMPTZ,
+    opening_float NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    expected_cash NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    counted_cash NUMERIC(10, 2),
+    cash_variance NUMERIC(10, 2),
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 34. EOD Reports (Phase 10 Z-Reports)
+CREATE TABLE eod_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    report_date DATE NOT NULL,
+    report_number VARCHAR(50) NOT NULL,
+    generated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    total_transactions INTEGER NOT NULL DEFAULT 0,
+    gross_sales NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    net_sales NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    vat_collected NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    discounts_total NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    tips_total NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    refunds_total NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    payment_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+    channel_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+    cash_drawer JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_tenant_branch_date_eod UNIQUE (tenant_id, branch_id, report_date)
+);
+
+CREATE INDEX idx_cash_drawer_tenant_branch ON cash_drawer_sessions (tenant_id, branch_id, opened_at DESC);
+CREATE INDEX idx_eod_reports_tenant_date ON eod_reports (tenant_id, branch_id, report_date DESC);
 ```

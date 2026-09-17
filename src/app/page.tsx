@@ -52,10 +52,14 @@ import {
   Globe,
   Smartphone,
   Monitor,
+  BarChart3,
+  Receipt,
+  Coins,
+  PieChart,
 } from "lucide-react";
 import { StatusBadge, OrderStatus } from "@/components/ui/status-badge";
 
-type ActiveTab = "overview" | "orders" | "kds" | "delivery" | "inventory" | "marketing" | "telephony" | "integrations" | "storefront";
+type ActiveTab = "overview" | "orders" | "kds" | "delivery" | "inventory" | "marketing" | "telephony" | "integrations" | "storefront" | "analytics";
 
 const PIPELINE_STEP_DETAILS: Record<number, { title: string; subtitle: string; icon: string; desc: string; detail: string; status: string }> = {
   1: {
@@ -585,6 +589,14 @@ export default function OperationalDashboard() {
     }
   };
 
+  // Phase 10 Analytics State
+  const [analyticsSubtab, setAnalyticsSubtab] = useState<"executive" | "heatmap" | "zreport" | "cogs" | "intelligence">("executive");
+  const [countedCashInput, setCountedCashInput] = useState<number>(612);
+  const [openingFloatInput, setOpeningFloatInput] = useState<number>(500);
+  const [cashDropInput, setCashDropInput] = useState<number>(0);
+  const [drawerNotes, setDrawerNotes] = useState<string>("ספירת סגירת משמרת - קופה ראשית");
+  const [reconciliationSaved, setReconciliationSaved] = useState<boolean>(false);
+
   return (
     <main className="min-h-screen bg-surface p-4 sm:p-8 font-sans" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -727,6 +739,17 @@ export default function OperationalDashboard() {
             >
               <Globe className="w-4 h-4 text-orange-500" />
               אתר הזמנות וקיוסק (Phase 9)
+            </button>
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
+                activeTab === "analytics"
+                  ? "bg-emerald-600 text-white shadow-sm font-black"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 text-emerald-400" />
+              אנליטיקה, דוחות Z & רווחיות (Phase 10)
             </button>
           </nav>
         </header>
@@ -3040,6 +3063,668 @@ export default function OperationalDashboard() {
                 </table>
               </div>
             </section>
+          </div>
+        )}
+
+        {/* TAB 10: ANALYTICS, REPORTING & FINANCIAL RECONCILIATION (Phase 10) */}
+        {activeTab === "analytics" && (
+          <div className="space-y-6">
+            {/* Phase Header Banner */}
+            <div className="bg-gradient-to-r from-emerald-950 via-zinc-900 to-zinc-950 border border-emerald-800/40 rounded-xl p-6 text-white shadow-md">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500 text-zinc-950 uppercase tracking-wide">
+                      Phase 10 Core
+                    </span>
+                    <span className="text-xs text-emerald-400 font-bold">
+                      ADR-0008 & Metrics Dictionary Compliant
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                    <BarChart3 className="w-7 h-7 text-emerald-400" />
+                    אנליטיקה, דוחות Z ורווחיות (Analytics & Finance)
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-300">
+                    דשבורד מנהלים בזמן אמת, מפת חום שעתית, התאמת קופות וסגירת יום, ועלות המכר (COGS) לפי מתכוני BOM.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href="/docs/analytics/METRICS_DICTIONARY.md"
+                    target="_blank"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold border border-zinc-700 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>מילון מדדים (Metrics Dictionary) ↗</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Sub-Navigation */}
+              <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-emerald-900/40">
+                <button
+                  onClick={() => setAnalyticsSubtab("executive")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    analyticsSubtab === "executive"
+                      ? "bg-emerald-500 text-zinc-950 font-black"
+                      : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  מדדי מכירות וביצועים (KPIs)
+                </button>
+                <button
+                  onClick={() => setAnalyticsSubtab("heatmap")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    analyticsSubtab === "heatmap"
+                      ? "bg-emerald-500 text-zinc-950 font-black"
+                      : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  מפת עומסים ושעות שיא (Heatmap)
+                </button>
+                <button
+                  onClick={() => setAnalyticsSubtab("zreport")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    analyticsSubtab === "zreport"
+                      ? "bg-emerald-500 text-zinc-950 font-black"
+                      : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                  דוח Z יומי והתאמת קופה (Cash Reconciliation)
+                </button>
+                <button
+                  onClick={() => setAnalyticsSubtab("cogs")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    analyticsSubtab === "cogs"
+                      ? "bg-emerald-500 text-zinc-950 font-black"
+                      : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+                >
+                  <PieChart className="w-3.5 h-3.5" />
+                  עלות המכר ומזון (COGS & BOM)
+                </button>
+                <button
+                  onClick={() => setAnalyticsSubtab("intelligence")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    analyticsSubtab === "intelligence"
+                      ? "bg-emerald-500 text-zinc-950 font-black"
+                      : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  המלצות AI ועקיפות מנהל (Phase 00 Sec 13)
+                </button>
+              </div>
+            </div>
+
+            {/* SUBTAB 1: EXECUTIVE SALES & KPIS */}
+            {analyticsSubtab === "executive" && (
+              <div className="space-y-6">
+                {/* 4 Big KPI Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-gray-500 font-bold">
+                      <span>פדיון כולל (Gross Revenue)</span>
+                      <span className="p-1.5 rounded-md bg-emerald-50 text-emerald-600">
+                        <TrendingUp className="w-4 h-4" />
+                      </span>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-gray-900">
+                      ₪14,850.00
+                    </div>
+                    <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                      <span>↑ 12.4% בהשוואה לאותו יום בשבוע שעבר</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-gray-500 font-bold">
+                      <span>פדיון נטו (Net Revenue)</span>
+                      <span className="p-1.5 rounded-md bg-blue-50 text-blue-600">
+                        <Coins className="w-4 h-4" />
+                      </span>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-gray-900">
+                      ₪12,185.00
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      לאחר ניכוי מע"מ (₪2,158) והנחות (₪507)
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-gray-500 font-bold">
+                      <span>הזמנות שטופלו (Valid Orders)</span>
+                      <span className="p-1.5 rounded-md bg-purple-50 text-purple-600">
+                        <Package className="w-4 h-4" />
+                      </span>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-gray-900">
+                      124
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <span>3 ביטולים (שיעור ביטולים 2.3%)</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-gray-500 font-bold">
+                      <span>ממוצע להזמנה (AOV)</span>
+                      <span className="p-1.5 rounded-md bg-amber-50 text-amber-600">
+                        <ShoppingBag className="w-4 h-4" />
+                      </span>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-gray-900">
+                      ₪119.75
+                    </div>
+                    <div className="text-xs text-amber-600 font-bold">
+                      <span>משלוחים: ₪142.00 | קיוסק: ₪74.50</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sales Breakdown by Channel and Payment */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Channel Breakdown */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                      <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        התפלגות מכירות לפי ערוץ (Channel Breakdown)
+                      </h3>
+                      <span className="text-xs text-gray-500 font-bold">124 הזמנות</span>
+                    </div>
+                    <div className="space-y-3 text-xs">
+                      {[
+                        { name: "אתר הזמנות (Online Web)", count: 42, rev: 5460, pct: 36.8, color: "bg-blue-500" },
+                        { name: "וולט (Wolt Aggregator)", count: 35, rev: 4900, pct: 33.0, color: "bg-cyan-500" },
+                        { name: "קיוסק דלפק (In-Store Kiosk)", count: 24, rev: 1788, pct: 12.0, color: "bg-purple-500" },
+                        { name: "10bis / תן ביס", count: 15, rev: 1950, pct: 13.1, color: "bg-orange-500" },
+                        { name: "טלפון ידני (Phone Call In)", count: 8, rev: 752, pct: 5.1, color: "bg-emerald-500" },
+                      ].map((ch, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="text-gray-800">{ch.name}</span>
+                            <span className="text-gray-900">₪{ch.rev.toLocaleString()} ({ch.count} הזמנות - {ch.pct}%)</span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                            <div className={`${ch.color} h-2 rounded-full`} style={{ width: `${ch.pct}%` }}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Payment Methods Breakdown */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                      <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-emerald-600" />
+                        התפלגות אמצעי תשלום (Payment Methods)
+                      </h3>
+                      <span className="text-xs text-gray-500 font-bold">סה"כ ₪14,850</span>
+                    </div>
+                    <div className="space-y-3 text-xs">
+                      {[
+                        { method: "כרטיס אשראי אונליין (Stripe / Meshulam)", rev: 8940, pct: 60.2, color: "bg-emerald-500" },
+                        { method: "מזומן בקופה (Cash In Register)", rev: 2340, pct: 15.8, color: "bg-amber-500" },
+                        { method: "Wolt Pay (התחשבנות ספק)", rev: 2120, pct: 14.3, color: "bg-cyan-500" },
+                        { method: "תן ביס / סיבוס כרטיס עובד", rev: 1450, pct: 9.7, color: "bg-indigo-500" },
+                      ].map((p, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="text-gray-800">{p.method}</span>
+                            <span className="text-gray-900">₪{p.rev.toLocaleString()} ({p.pct}%)</span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                            <div className={`${p.color} h-2 rounded-full`} style={{ width: `${p.pct}%` }}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUBTAB 2: HOURLY HEATMAP & PEAK HOURS */}
+            {analyticsSubtab === "heatmap" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-3">
+                    <div>
+                      <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-orange-500" />
+                        מפת חום שעתית - צפיפות הזמנות שבועית (Weekly Hourly Heatmap)
+                      </h3>
+                      <p className="text-xs text-gray-500">עוצמת הצבע מייצגת את כמות ההזמנות הממוצעת לפי יום ושעה</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-gray-400">שקט</span>
+                      <span className="w-3 h-3 rounded bg-emerald-100"></span>
+                      <span className="w-3 h-3 rounded bg-emerald-300"></span>
+                      <span className="w-3 h-3 rounded bg-emerald-500"></span>
+                      <span className="w-3 h-3 rounded bg-orange-500"></span>
+                      <span className="w-3 h-3 rounded bg-red-600"></span>
+                      <span className="text-gray-400">עומס שיא</span>
+                    </div>
+                  </div>
+
+                  {/* Heatmap Grid */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-center text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                          <th className="p-2 text-right">יום \ שעה</th>
+                          {[11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23].map((h) => (
+                            <th key={h} className="p-2 font-mono">{h}:00</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {[
+                          { day: "ראשון", vals: [3, 8, 12, 9, 4, 3, 5, 11, 15, 18, 14, 8, 3] },
+                          { day: "שני", vals: [4, 9, 14, 8, 3, 2, 6, 12, 16, 19, 13, 7, 2] },
+                          { day: "שלישי", vals: [3, 7, 11, 7, 4, 3, 5, 10, 14, 17, 12, 6, 2] },
+                          { day: "רביעי", vals: [4, 10, 15, 10, 5, 4, 7, 14, 18, 22, 16, 9, 4] },
+                          { day: "חמישי", vals: [5, 12, 18, 12, 6, 5, 9, 17, 24, 28, 22, 14, 6] },
+                          { day: "שישי", vals: [8, 18, 26, 20, 8, 2, 0, 0, 0, 0, 0, 0, 0] },
+                          { day: "שבת", vals: [0, 0, 0, 0, 0, 0, 8, 18, 26, 30, 24, 16, 7] },
+                        ].map((row, rIdx) => (
+                          <tr key={rIdx} className="hover:bg-gray-50">
+                            <td className="p-2 text-right font-bold text-gray-900 whitespace-nowrap">{row.day}</td>
+                            {row.vals.map((v, cIdx) => {
+                              let bg = "bg-gray-50 text-gray-400";
+                              if (v > 25) bg = "bg-red-600 text-white font-black";
+                              else if (v > 18) bg = "bg-orange-500 text-white font-bold";
+                              else if (v > 12) bg = "bg-emerald-500 text-white font-bold";
+                              else if (v > 6) bg = "bg-emerald-200 text-emerald-900";
+                              else if (v > 0) bg = "bg-emerald-50 text-emerald-800";
+
+                              return (
+                                <td key={cIdx} className="p-1">
+                                  <div className={`p-1.5 rounded text-[11px] font-mono transition-transform hover:scale-110 ${bg}`}>
+                                    {v > 0 ? v : "-"}
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Summary Callouts */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                    <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 space-y-1 text-xs">
+                      <div className="font-bold text-orange-900 flex items-center gap-1.5 text-sm">
+                        <Flame className="w-4 h-4 text-orange-600" />
+                        שעות שיא מרכזיות (Peak Hours)
+                      </div>
+                      <p className="text-orange-800">
+                        <strong>חמישי & שבת 20:00 - 22:00:</strong> ממוצע של 28-30 הזמנות לשעה (מומלץ לתגבר 3 שליחים ועמדת הרכבה).
+                      </p>
+                      <p className="text-orange-800">
+                        <strong>שישי 12:00 - 14:00:</strong> עומס צהריים שיא של 26 הזמנות לשעה.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-1 text-xs">
+                      <div className="font-bold text-blue-900 flex items-center gap-1.5 text-sm">
+                        <Clock className="w-4 h-4 text-blue-600" />
+                        שעות שקטות ומבצעי Happy Hour מומלצים
+                      </div>
+                      <p className="text-blue-800">
+                        <strong>א'-ד' 15:00 - 17:00:</strong> ממוצע 3-4 הזמנות לשעה. שעות אידיאליות להפעלת קמפיין שיווק (Phase 6) או הנחת שעות שקטות.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUBTAB 3: EOD Z-REPORT & CASH DRAWER RECONCILIATION */}
+            {analyticsSubtab === "zreport" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Official Z-Report Preview */}
+                <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 pb-4 gap-2">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded text-xs font-black bg-zinc-900 text-white">
+                        דוח Z יומי רשמי (EOD Z-Report)
+                      </span>
+                      <h3 className="text-xl font-black text-gray-900 mt-1">
+                        מספר דוח: Z-20260918-MAIN
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        תאריך עסקים: {new Date().toLocaleDateString("he-IL")} | סניף ראשי תל אביב
+                      </p>
+                    </div>
+                    <div className="text-left">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        ✓ מאוזן ומוכן לנעילה
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Financial Breakdown Table */}
+                  <div className="space-y-4 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div className="text-gray-500 font-bold">עסקאות כוללות</div>
+                        <div className="text-lg font-black text-gray-900">124</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div className="text-gray-500 font-bold">פדיון ברוטו</div>
+                        <div className="text-lg font-black text-gray-900">₪14,850.00</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div className="text-gray-500 font-bold">מע"מ 17%</div>
+                        <div className="text-lg font-black text-gray-900">₪2,158.00</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div className="text-gray-500 font-bold">סה"כ טיפים</div>
+                        <div className="text-lg font-black text-gray-900">₪890.00</div>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="w-full text-right text-xs">
+                        <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
+                          <tr>
+                            <th className="p-2.5">אמצעי תשלום / ספק</th>
+                            <th className="p-2.5">כמות עסקאות</th>
+                            <th className="p-2.5">סכום כולל</th>
+                            <th className="p-2.5">סטטוס התאמה</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          <tr>
+                            <td className="p-2.5 font-bold text-gray-900">מזומן (Cash in Register)</td>
+                            <td className="p-2.5">24</td>
+                            <td className="p-2.5 font-bold">₪1,840.00</td>
+                            <td className="p-2.5"><span className="text-emerald-600 font-bold">✓ תואם קופה</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5 font-bold text-gray-900">אשראי (Stripe / Meshulam EMV)</td>
+                            <td className="p-2.5">68</td>
+                            <td className="p-2.5 font-bold">₪8,940.00</td>
+                            <td className="p-2.5"><span className="text-emerald-600 font-bold">✓ שודר לשבא</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5 font-bold text-gray-900">Wolt Partner Settlements</td>
+                            <td className="p-2.5">22</td>
+                            <td className="p-2.5 font-bold">₪2,620.00</td>
+                            <td className="p-2.5"><span className="text-blue-600 font-bold">✓ סונכרן ב-API</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5 font-bold text-gray-900">10bis / Cibus Card</td>
+                            <td className="p-2.5">10</td>
+                            <td className="p-2.5 font-bold">₪1,450.00</td>
+                            <td className="p-2.5"><span className="text-blue-600 font-bold">✓ אושר בסליקה</span></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cash Drawer Reconciliation Panel */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-5">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
+                      <Coins className="w-5 h-5 text-amber-500" />
+                      התאמת קופה ידנית (Cash Drawer)
+                    </h3>
+                    <p className="text-xs text-gray-500">חישוב הפרשי קופה מול ספירה פיזית</p>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
+                      <span className="text-gray-600 font-bold">דמי פתיחת קופה (Float):</span>
+                      <span className="text-gray-900 font-bold font-mono">₪{openingFloatInput}.00</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
+                      <span className="text-gray-600 font-bold">מכירות מזומן במשמרת:</span>
+                      <span className="text-gray-900 font-bold font-mono">₪1,840.00</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
+                      <span className="text-gray-600 font-bold">מזומן צפוי במגירה:</span>
+                      <span className="text-gray-900 font-black font-mono text-sm">
+                        ₪{openingFloatInput + 1840}.00
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 pt-2">
+                      <label className="font-bold text-gray-700 block">
+                        ספירה פיזית בפועל (Counted Cash):
+                      </label>
+                      <input
+                        type="number"
+                        value={countedCashInput}
+                        onChange={(e) => {
+                          setCountedCashInput(Number(e.target.value));
+                          setReconciliationSaved(false);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold font-mono focus:ring-2 focus:ring-emerald-500"
+                        placeholder="הזן סכום ספירה ₪"
+                      />
+                    </div>
+
+                    {/* Computed Variance Alert */}
+                    {(() => {
+                      const expected = openingFloatInput + 1840;
+                      const diff = countedCashInput - expected;
+                      const isBalanced = diff === 0;
+                      const isMinor = Math.abs(diff) <= 5;
+
+                      return (
+                        <div
+                          className={`p-3 rounded-lg border text-xs space-y-1 ${
+                            isBalanced
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                              : isMinor
+                              ? "bg-amber-50 border-amber-200 text-amber-800"
+                              : "bg-red-50 border-red-200 text-red-800"
+                          }`}
+                        >
+                          <div className="font-bold flex items-center justify-between">
+                            <span>הפרש קופה מחושב (Variance):</span>
+                            <span className="font-mono text-sm font-black">
+                              {diff > 0 ? `+₪${diff}` : diff < 0 ? `-₪${Math.abs(diff)}` : "₪0.00 (מאוזן)"}
+                            </span>
+                          </div>
+                          <div className="text-[11px]">
+                            {isBalanced
+                              ? "✓ הקופה מאוזנת לחלוטין ללא עודף או חוסר."
+                              : isMinor
+                              ? "⚠️ הפרש קל בטווח הסטנדרטי המותר (עד ±5 שקלים)."
+                              : "❌ הפרש חריג בקופה! נדרש רישום הערת הסבר לסגירת יום."}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="space-y-1">
+                      <label className="font-bold text-gray-700 block">הערות סגירה:</label>
+                      <input
+                        type="text"
+                        value={drawerNotes}
+                        onChange={(e) => setDrawerNotes(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => setReconciliationSaved(true)}
+                      className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        reconciliationSaved
+                          ? "bg-emerald-600 text-white font-black"
+                          : "bg-zinc-900 hover:bg-zinc-800 text-white"
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      {reconciliationSaved ? "✓ סגירת קופה ננעלה ואושרה במסד הנתונים" : "נעל קופה והפק דוח Z סופי"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUBTAB 4: COGS & FOOD COST VARIANCE */}
+            {analyticsSubtab === "cogs" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-3 gap-2">
+                    <div>
+                      <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
+                        <PieChart className="w-5 h-5 text-emerald-600" />
+                        דוח עלות המכר ומתכוני BOM (Theoretical vs Actual Food Cost)
+                      </h3>
+                      <p className="text-xs text-gray-500">פירוק עלויות חומרי גלם מול מחירי מכירה לפי מפרט מתכון (BOM)</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500">אחוז עלות מזון כולל</div>
+                        <div className="text-lg font-black text-emerald-600">29.8%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-xs">
+                      <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
+                        <tr>
+                          <th className="p-3">שם מנה / פריט</th>
+                          <th className="p-3">מחיר מכירה (₪)</th>
+                          <th className="p-3">עלות חומרי גלם (BOM COGS)</th>
+                          <th className="p-3">רווח גולמי ליחידה</th>
+                          <th className="p-3">אחוז עלות מזון (%)</th>
+                          <th className="p-3">יחידות שנמכרו</th>
+                          <th className="p-3">סה"כ פדיון</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {[
+                          { name: "המבורגר קלאסי 220 גרם", price: 58, cogs: 16.5, units: 64, rev: 3712 },
+                          { name: "המבורגר דאבל 440 גרם", price: 82, cogs: 26.8, units: 28, rev: 2296 },
+                          { name: "צ'יפס בלגי פריך ענק", price: 22, cogs: 3.8, units: 85, rev: 1870 },
+                          { name: "טבעות בצל הולנדיות", price: 26, cogs: 4.5, units: 32, rev: 832 },
+                          { name: "קוקה קולה 330 מ\"ל", price: 12, cogs: 3.2, units: 94, rev: 1128 },
+                        ].map((item, idx) => {
+                          const margin = item.price - item.cogs;
+                          const pct = Math.round((item.cogs / item.price) * 1000) / 10;
+                          const isHealthy = pct <= 32;
+
+                          return (
+                            <tr key={idx} className="hover:bg-gray-50">
+                              <td className="p-3 font-bold text-gray-900">{item.name}</td>
+                              <td className="p-3 font-mono">₪{item.price}.00</td>
+                              <td className="p-3 font-mono text-gray-600">₪{item.cogs.toFixed(2)}</td>
+                              <td className="p-3 font-mono font-bold text-emerald-700">₪{margin.toFixed(2)}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded font-bold ${isHealthy ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                                  {pct}%
+                                </span>
+                              </td>
+                              <td className="p-3 font-bold text-gray-800">{item.units} יח'</td>
+                              <td className="p-3 font-bold text-gray-900 font-mono">₪{item.rev.toLocaleString()}.00</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUBTAB 5: DECISION INTELLIGENCE & ADVISOR LOGS (Phase 00 Sec 13) */}
+            {analyticsSubtab === "intelligence" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-3 gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800">
+                          PHASE 00 SEC 13 & 54
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800">
+                          Gen 2 Dataset Readiness
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-base text-gray-900 mt-1 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-purple-600" />
+                        יומן החלטות AI, שיעורי אישור ועקיפות מנהל (Decision Intelligence Logs)
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        כל המלצה של מנוע האיחוד החכם (Smart Batching) ומערכת הניתוב מתועדת עם גרסת האלגוריתם ותגובת המפעיל לאימון מודלי העתיד.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div className="p-4 rounded-xl bg-purple-50 border border-purple-200 space-y-1">
+                      <div className="text-purple-700 font-bold">המלצות AI שנוצרו (Total Advisory)</div>
+                      <div className="text-2xl font-black text-purple-900">48</div>
+                      <div className="text-purple-600">גרסת אלגוריתם: heuristics-v1.2</div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                      <div className="text-emerald-700 font-bold">אישורים ללא שינוי (Approved)</div>
+                      <div className="text-2xl font-black text-emerald-900">44 (91.6%)</div>
+                      <div className="text-emerald-600">משוב חיובי גבוה (Strong Alignment)</div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
+                      <div className="text-amber-700 font-bold">עקיפות מנהל (Human Overrides)</div>
+                      <div className="text-2xl font-black text-amber-900">4 (8.4%)</div>
+                      <div className="text-amber-600">משמש כמשוב שלילי (Negative Signal)</div>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-lg overflow-hidden text-xs">
+                    <table className="w-full text-right">
+                      <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
+                        <tr>
+                          <th className="p-2.5">מזהה החלטה</th>
+                          <th className="p-2.5">סוג המלצה</th>
+                          <th className="p-2.5">גרסת אלגוריתם</th>
+                          <th className="p-2.5">פעולת המנהל</th>
+                          <th className="p-2.5">סיבת עקיפה (אם קיימת)</th>
+                          <th className="p-2.5">שעת החלטה</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        <tr className="hover:bg-gray-50">
+                          <td className="p-2.5 font-mono text-gray-600">dec-8812</td>
+                          <td className="p-2.5 font-bold text-gray-900">איחוד משלוח חכם (Smart Batch 2x)</td>
+                          <td className="p-2.5 font-mono text-purple-700">smart-batch-v1</td>
+                          <td className="p-2.5"><span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">APPROVED</span></td>
+                          <td className="p-2.5 text-gray-400">-</td>
+                          <td className="p-2.5 text-gray-500">20:14:10</td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="p-2.5 font-mono text-gray-600">dec-8809</td>
+                          <td className="p-2.5 font-bold text-gray-900">איחוד משלוח חכם (Smart Batch 3x)</td>
+                          <td className="p-2.5 font-mono text-purple-700">smart-batch-v1</td>
+                          <td className="p-2.5"><span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800">OVERRIDDEN</span></td>
+                          <td className="p-2.5 text-amber-800 font-bold">לקוח VIP דרש יציאה מיידית ללא איחוד</td>
+                          <td className="p-2.5 text-gray-500">19:55:02</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

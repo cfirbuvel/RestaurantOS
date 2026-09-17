@@ -61,8 +61,8 @@
 | 22 | Trackers | Fleet & Telematics | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 23 | Fleet Telemetry | Fleet & Telematics | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 24 | Telephony | Integration Hub | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
-| 25 | Website Ordering | Public Surfaces | `Planned` | Pending | Pending | Pending | `Amended & Documented` |
-| 26 | Kiosk | Public Surfaces | `Planned` | Pending | Pending | Pending | `Amended & Documented` |
+| 25 | Website Ordering | Public Surfaces | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
+| 26 | Kiosk | Public Surfaces | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 27 | Inventory | Inventory & Supply | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 28 | Warehouse | Inventory & Supply | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 29 | Suppliers | Inventory & Supply | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
@@ -74,8 +74,8 @@
 | 35 | Promotions | Customer Marketing | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 36 | Coupons | Customer Marketing | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 37 | Loyalty | Customer Marketing | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
-| 38 | Analytics | Observability | `Planned` | Pending | Pending | Pending | `Amended & Documented` |
-| 39 | Reporting | Observability | `Planned` | Pending | Pending | Pending | `Amended & Documented` |
+| 38 | Analytics | Observability | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
+| 39 | Reporting | Observability | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 40 | Notifications | Integration Hub | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 41 | Integrations Hub | Integration Hub | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
 | 42 | Audit Logs | Observability | `Complete` | Passed | Passed | Verified | `Amended & Documented` |
