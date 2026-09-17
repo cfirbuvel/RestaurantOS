@@ -20,6 +20,11 @@
 | **Vehicle Trip** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `vehicle-trips.spec.ts` |
 | **Geofence** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `geofence-engine.spec.ts` |
 | **Smart Batch** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `smart-batching.spec.ts` |
+| **Campaign** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `campaigns.spec.ts` |
+| **Coupon** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `coupons.spec.ts` |
+| **Promotion Engine** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `promotion-engine.spec.ts` |
+| **Loyalty Program** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `loyalty.spec.ts` |
+| **First-Order Logic** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `first-order-logic.spec.ts` |
 
 ---
 
@@ -44,6 +49,16 @@
 - `TEST-FLT-004`: Geofence entry: Vehicle coordinates entering customer geofence emits `VehicleEnteredCustomerGeofence` and advances delivery to `ARRIVED_AT_CUSTOMER_AREA`.
 - `TEST-FLT-005`: **Telemetry $\neq$ Business Truth Assertion:** Verifies that entering customer geofence **DOES NOT** transition delivery to `DELIVERED`. `DeliveryCompleted` requires explicit driver confirmation.
 
+### 2.4 Marketing, Promotions & Loyalty Engine Suite
+- `TEST-MKT-001`: Campaign state machine: Valid transitions `DRAFT -> SCHEDULED -> ACTIVE -> PAUSED -> COMPLETED / CANCELLED`; illegal transitions rejected.
+- `TEST-MKT-002`: Coupon validation & redemption: Expiration, activation dates, global limits, customer limits, branch/channel restrictions, and max discount cap.
+- `TEST-MKT-003`: Coupon rollback: Order cancellation safely decrements redemption count and restores exhausted status if needed.
+- `TEST-MKT-004`: Deterministic rule-based promotion evaluation: Evaluates `IF-THEN` conditions against order context without non-deterministic side effects.
+- `TEST-MKT-005`: Promotion conflict resolution: `STACKABLE` accumulates, `EXCLUSIVE` competes by priority, `BEST_DEAL` maximizes discount with max cap enforcement.
+- `TEST-MKT-006`: First-order eligibility: Checks customer order history; cancelled/failed orders never disqualify first-order benefits.
+- `TEST-MKT-007`: Canonical 3-tier loyalty system: `NEW_CUSTOMER` (לקוח חדש), `REGULAR` (לקוח קבוע), `VIP` (לקוח VIP). Tier progression and demotion on rollback.
+- `TEST-MKT-008`: Points accumulation and redemption: Awards points per currency spent, validates redemption balance, prevents negative balance.
+
 ---
 
 ## 3. High-Concurrency Race Condition Test Suite
@@ -62,6 +77,7 @@
 
 - `SEC-ISO-001`: Cross-Tenant Vehicle Query: Tenant A requests `GET /api/v1/fleet/vehicles/:id` for a vehicle belonging to Tenant B $\rightarrow$ `404 Not Found`.
 - `SEC-ISO-002`: Cross-Tenant Driver Assignment: Tenant A attempts to assign a driver from Tenant B to a delivery in Tenant A $\rightarrow$ `403 Forbidden (TENANT_BOUNDARY_VIOLATION)`.
+- `SEC-ISO-003`: Marketing Tenant Isolation: Coupons, campaigns, promotions, and loyalty accounts from Tenant A are strictly inaccessible to Tenant B $\rightarrow$ `null` / `404 Not Found`.
 - `SEC-DTO-001`: Driver Data Minimization: Driver queries `GET /api/v1/deliveries/:id` $\rightarrow$ receives `DeliveryViewDTO` (customer name, masked phone, address, notes) with **zero access** to customer email, billing history, or CRM notes.
 - `SEC-WSS-001`: Expired WebSocket Ticket: Attempting WebSocket handshake with an expired (>60s) ticket $\rightarrow$ `401 Unauthorized`.
 - `SEC-WSS-002`: Real-Time Channel Guard: Line Cook attempting to subscribe to `branch:<id>:telemetry` $\rightarrow$ subscription rejected.

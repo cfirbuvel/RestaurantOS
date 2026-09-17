@@ -177,3 +177,77 @@ Connection: Upgrade
 | `driver:<id>:deliveries` | Authenticated Driver | `DeliveryViewDTO` (address, entrance, notes, masked customer name). |
 | `order:<id>:tracking` | Public (Anonymized) | Live delivery stage, anonymized vehicle coordinates (no driver phone/PII). |
 | `branch:<id>:telemetry` | Fleet Manager | Raw vehicle GPS telemetry, speed, battery levels. |
+
+---
+
+## 5. Marketing, Promotions & Loyalty Engine Endpoints
+
+### 5.1 Campaigns
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/campaigns` | `GET` | `campaigns.read` | List campaigns with status, type, branch filtering & pagination. |
+| `/api/v1/campaigns` | `POST` | `campaigns.manage` | Create a new campaign (draft). |
+| `/api/v1/campaigns/:id` | `GET` | `campaigns.read` | Get single campaign details. |
+| `/api/v1/campaigns/:id` | `PATCH` | `campaigns.manage` | Update draft campaign properties. |
+| `/api/v1/campaigns/:id` | `DELETE` | `campaigns.manage` | Soft-delete non-active campaign. |
+| `/api/v1/campaigns/:id/schedule` | `POST` | `campaigns.manage` | Schedule campaign for future execution. |
+| `/api/v1/campaigns/:id/activate` | `POST` | `campaigns.manage` | Transition campaign to ACTIVE. |
+| `/api/v1/campaigns/:id/pause` | `POST` | `campaigns.manage` | Pause an active campaign. |
+| `/api/v1/campaigns/:id/cancel` | `POST` | `campaigns.manage` | Cancel campaign with reason. |
+| `/api/v1/campaigns/:id/dispatch` | `POST` | `campaigns.manage` | Dispatch campaign via SMS/WhatsApp/Email to eligible audience. |
+
+### 5.2 Coupons
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/coupons` | `GET` | `coupons.read` | List coupons with optional campaign/status filtering. |
+| `/api/v1/coupons` | `POST` | `coupons.manage` | Create reusable or single-use coupon. |
+| `/api/v1/coupons/:id` | `GET` | `coupons.read` | Get single coupon details. |
+| `/api/v1/coupons/validate` | `POST` | Authenticated | Validate coupon code against order context and return calculated discount. |
+| `/api/v1/coupons/redeem` | `POST` | Authenticated | Atomically redeem coupon code on an order. |
+
+### 5.3 Promotions Engine
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/promotions` | `GET` | `promotions.read` | List promotions with branch and active status filtering. |
+| `/api/v1/promotions` | `POST` | `promotions.manage` | Create automated promotion rule. |
+| `/api/v1/promotions/:id` | `GET` | `promotions.read` | Get single promotion details. |
+| `/api/v1/promotions/:id` | `PATCH` | `promotions.manage` | Update promotion rule or limits. |
+| `/api/v1/promotions/:id` | `DELETE` | `promotions.manage` | Soft-delete promotion. |
+| `/api/v1/promotions/evaluate` | `POST` | Authenticated | Deterministically evaluate all active promotions against order context. |
+
+### 5.4 Loyalty Program & Accounts
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/loyalty/program` | `GET` | Authenticated | Get tenant loyalty program configuration & tier thresholds. |
+| `/api/v1/loyalty/program` | `POST` | `loyalty.manage` | Create or update tenant loyalty program settings. |
+| `/api/v1/loyalty/accounts/:customerId` | `GET` | Authenticated | Get customer loyalty account, tier, and points balance. |
+| `/api/v1/loyalty/accounts/:customerId/redeem` | `POST` | Authenticated | Redeem customer points for checkout discount value. |
+| `/api/v1/loyalty/accounts/:customerId/history` | `GET` | Authenticated | Get paginated points ledger history (earn, redeem, expire, rollback). |
+
+### 5.5 Customer Segments
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/segments` | `GET` | `segments.read` | List customer segments. |
+| `/api/v1/segments` | `POST` | `segments.manage` | Create targeting segment with conditions. |
+| `/api/v1/segments/:id` | `GET` | `segments.read` | Get segment details. |
+| `/api/v1/segments/:id` | `PATCH` | `segments.manage` | Update segment conditions. |
+| `/api/v1/segments/:id` | `DELETE` | `segments.manage` | Delete customer segment. |
+| `/api/v1/segments/:id/evaluate` | `POST` | `segments.read` | Evaluate segment against customer profiles to resolve audience. |
+
+---
+
+## 6. Telephony & PBX Integration (Phase 7)
+
+### 6.1 Telephony Webhooks & Ingestion
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/telephony/webhook` | `POST` | Webhook Signature / Public | PBX trunk webhook ingestion (supports incoming ring, answered, and completion status updates). |
+| `/api/v1/telephony/simulate/incoming-call` | `POST` | `telephony.manage` | Operator simulator endpoint to trigger incoming call Caller ID popup. |
+
+### 6.2 Call History & Logs
+| Endpoint | Method | Scope / Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/v1/telephony/calls` | `GET` | `telephony.read` | Query historical call logs with filtering by branch, status, customer, and limit. |
+| `/api/v1/telephony/calls/:id` | `GET` | `telephony.read` | Retrieve call log details and recording metadata. |
+
+

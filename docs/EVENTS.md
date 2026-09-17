@@ -136,3 +136,36 @@ All domain events in RestaurantOS are strongly typed, immutable, versioned, and 
 | `KDSTicketReady` | Cook marks ticket complete | `ticketId`, `stationId`, `readyAt`, `allStationsReady` | Expo Screen, Order Domain (`OrderReady`) |
 | `KDSTicketBumped` | Expo clears ticket from rail | `ticketId`, `bumpedAt`, `bumpedBy` | KDS Archival, Analytics |
 | `KDSTicketRecalled` | Expo recalls bumped ticket | `ticketId`, `recalledAt`, `recalledBy` | Active KDS Station Rail |
+
+---
+
+## 9. Marketing, Promotions & Loyalty Events
+
+| Event Name | Trigger / Originating Command | Payload Summary | Primary Consumers |
+| :--- | :--- | :--- | :--- |
+| `CampaignCreated` | Campaign drafted (`POST /campaigns`) | `campaignId`, `type`, `createdBy` | Campaign Auditor, Marketing Dashboard |
+| `CampaignScheduled`| Campaign scheduled (`POST /campaigns/:id/schedule`)| `campaignId`, `scheduledAt` | Scheduler Service, Marketing Console |
+| `CampaignActivated`| Campaign activated (`POST /campaigns/:id/activate`)| `campaignId`, `activatedAt` | Marketing Dispatcher, Promotion Evaluator |
+| `CampaignPaused`   | Campaign paused (`POST /campaigns/:id/pause`)       | `campaignId`, `pausedAt` | Marketing Dispatcher |
+| `CampaignCompleted`| Campaign end date reached or budget exhausted      | `campaignId`, `completedAt`, `metrics` | Marketing Analytics, Billing |
+| `CampaignCancelled`| Manager cancels campaign                           | `campaignId`, `cancelledAt`, `reason` | Campaign Auditor, Marketing Console |
+| `CouponCreated`    | Coupon generated (`POST /coupons`)                 | `couponId`, `code`, `campaignId`, `discountType` | Marketing Dashboard |
+| `CouponRedeemed`   | Coupon applied to order                            | `couponId`, `orderId`, `customerId`, `discountApplied` | Order Domain, Financial Ledger, Analytics |
+| `CouponRedemptionRolledBack` | Order cancelled / refunded               | `couponId`, `orderId`, `customerId` | Coupon Service (re-activate quota) |
+| `PromotionApplied` | Promotion matched order context                    | `promotionId`, `orderId`, `discountAmount`, `explanation` | Order Summary, Analytics, Receipt Generator |
+| `LoyaltyPointsEarned` | Order completed (`OrderCompleted` event)        | `customerId`, `pointsEarned`, `orderId`, `newBalance` | Customer App, CRM, SMS/WhatsApp Notification |
+| `LoyaltyPointsRedeemed` | Customer redeems points on checkout           | `customerId`, `pointsRedeemed`, `currencyValue`, `orderId` | Order Checkout, Accounting |
+| `LoyaltyPointsRolledBack` | Order cancelled / refunded                  | `customerId`, `pointsRolledBack`, `orderId`, `newBalance` | Loyalty Ledger, Customer App |
+| `LoyaltyTierChanged` | Lifetime points threshold crossed (Promotion/Demotion) | `customerId`, `previousTier`, `newTier`, `reason` | Customer Notification, CRM, VIP Promotions |
+
+---
+
+## 10. Telephony & PBX Events (Phase 7)
+
+| Event Name | Trigger / Originating Command | Payload Summary | Primary Consumers |
+| :--- | :--- | :--- | :--- |
+| `call.ringing` | Inbound call webhook from PBX/SIP trunk | `callSessionId`, `callerNumber`, `customer`, `recentOrders`, `savedAddresses` | Realtime Gateway (Caller ID popup broadcast), POS Operator Console |
+| `call.answered` | Operator or SIP endpoint answers call | `call_session_id`, `operator_id`, `answered_at` | Telephony Service, Analytics |
+| `call.ended` | PBX signals call completion / hangup / missed | `call_session_id`, `duration_seconds`, `status`, `recording_url` | Call History Log, Auditing, CRM Last Call Touchpoint |
+
+

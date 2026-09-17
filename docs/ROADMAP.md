@@ -91,34 +91,35 @@ timeline
 ---
 
 ### Phase 6: Campaigns, Promotions & Customer Loyalty
-- [ ] Marketing campaign dispatcher (SMS, WhatsApp, Email).
-- [ ] Rule-based promotional engine (BOGO, combo discounts, happy hour schedules).
-- [ ] Coupon validation and redemption tracking with usage caps.
-- [ ] Tiered customer loyalty points engine (Bronze, Silver, Gold, Platinum).
+- [x] Marketing campaign dispatcher (SMS, WhatsApp, Email).
+- [x] Rule-based promotional engine (BOGO, combo discounts, first-order, VIP rules).
+- [x] Coupon validation and redemption tracking with usage caps & rollback.
+- [x] Canonical 3-tier customer loyalty points engine (לקוח חדש, לקוח קבוע, לקוח VIP).
 
 ---
 
 ### Phase 7: Telephony PBX Integration & Caller ID Popup
-- [ ] SIP / WebRTC PBX webhook listener.
-- [ ] Real-time Caller ID screen popup for phone intake operators.
-- [ ] Fast customer lookup and 1-click previous order duplication.
+- [x] SIP / WebRTC PBX webhook listener & adapter abstraction (`MockSIPAdapter`).
+- [x] Real-time Caller ID screen popup for phone intake operators with CRM lookup.
+- [x] Fast customer lookup, order history, address intelligence, and 1-click intake flow.
+- [x] Israeli wiretap law compliance with automated greeting recording tracking.
 
 ---
 
 ### Phase 8: Integration Hub Adapters
-- [ ] Wolt bi-directional order sync and status callback adapter.
-- [ ] 10bis aggregator order ingestion adapter.
-- [ ] Mishloha delivery integration adapter.
-- [ ] Green Invoice (חשבונית ירוקה) digital tax invoice and receipt issuance adapter.
-- [ ] Meshulam credit card clearance and tokenization adapter.
-- [ ] Stripe international payment clearing adapter.
+- [x] Wolt bi-directional order sync and status callback adapter.
+- [x] 10bis aggregator order ingestion adapter.
+- [x] Mishloha delivery integration adapter.
+- [x] Green Invoice (חשבונית ירוקה) digital tax invoice and receipt issuance adapter.
+- [x] Meshulam credit card clearance and tokenization adapter.
+- [x] Stripe international payment clearing adapter.
 
 ---
 
 ### Phase 9: Public Website Ordering & Self-Service Kiosk
-- [ ] SEO-optimized responsive public web storefront (JSON-LD, Open Graph, Sitemap).
-- [ ] Public customer checkout and live GPS order status tracking.
-- [ ] Touchscreen self-ordering kiosk terminal with EMV payment terminal handshake.
+- [x] SEO-optimized responsive public web storefront (JSON-LD, Open Graph, Sitemap).
+- [x] Public customer checkout and live GPS order status tracking.
+- [x] Touchscreen self-ordering kiosk terminal with EMV payment terminal handshake.
 
 ---
 

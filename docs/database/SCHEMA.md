@@ -67,6 +67,10 @@ CREATE TYPE kds_ticket_status AS ENUM ('QUEUED', 'STARTED', 'READY', 'BUMPED', '
 CREATE TYPE inventory_depletion_policy AS ENUM ('ON_ACCEPTED', 'ON_PREPARATION_START', 'ON_FULFILLMENT');
 CREATE TYPE stock_movement_type AS ENUM ('ORDER_CONSUMPTION', 'MANUAL_ADJUSTMENT', 'PURCHASE_RECEIPT', 'WASTE_DISPOSAL', 'BRANCH_TRANSFER');
 CREATE TYPE waste_reason AS ENUM ('EXPIRED', 'DROPPED', 'BURNT', 'PREP_ERROR', 'CUSTOMER_RETURN', 'DEFECTIVE_INGREDIENT');
+
+-- 6. Telephony & PBX Enums (Phase 7)
+CREATE TYPE call_status AS ENUM ('RINGING', 'ANSWERED', 'COMPLETED', 'MISSED', 'REJECTED');
+CREATE TYPE call_direction AS ENUM ('INBOUND', 'OUTBOUND');
 ```
 
 ---
@@ -536,4 +540,214 @@ CREATE TABLE intelligence_decision_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     resolved_at TIMESTAMPTZ
 );
+
+-- ============================================================================
+-- Phase 6: Marketing, Promotions, Coupons & Loyalty Engine
+-- ============================================================================
+
+-- 22. Marketing Enums
+CREATE TYPE campaign_status AS ENUM ('DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+CREATE TYPE campaign_type AS ENUM ('PROMOTIONAL', 'SEASONAL', 'WIN_BACK', 'LOYALTY_REWARD', 'FIRST_ORDER', 'FLASH_SALE');
+CREATE TYPE coupon_scope AS ENUM ('GLOBAL', 'CUSTOMER_SPECIFIC', 'BRANCH_SPECIFIC');
+CREATE TYPE coupon_status AS ENUM ('ACTIVE', 'EXHAUSTED', 'EXPIRED', 'INACTIVE');
+CREATE TYPE discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_DELIVERY', 'FREE_ITEM', 'BOGO');
+CREATE TYPE promotion_stack_mode AS ENUM ('EXCLUSIVE', 'STACKABLE', 'BEST_DEAL');
+CREATE TYPE loyalty_tier AS ENUM ('NEW_CUSTOMER', 'REGULAR', 'VIP');
+CREATE TYPE loyalty_transaction_type AS ENUM ('EARN', 'REDEEM', 'EXPIRE', 'ADJUST', 'ROLLBACK');
+
+-- 23. Customer Segments
+CREATE TABLE customer_segments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    conditions JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    version INTEGER NOT NULL DEFAULT 1
+);
+
+-- 24. Campaigns
+CREATE TABLE campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    type campaign_type NOT NULL DEFAULT 'PROMOTIONAL',
+    status campaign_status NOT NULL DEFAULT 'DRAFT',
+    segment_id UUID REFERENCES customer_segments(id) ON DELETE SET NULL,
+    target_conditions JSONB DEFAULT '[]'::jsonb,
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    scheduled_at TIMESTAMPTZ,
+    budget_limit NUMERIC(10, 2),
+    budget_spent NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    metrics JSONB NOT NULL DEFAULT '{"sent_count":0,"delivered_count":0,"converted_count":0,"revenue_generated":0,"roi":0}'::jsonb,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
+    version INTEGER NOT NULL DEFAULT 1
+);
+
+-- 25. Campaign Dispatches
+CREATE TABLE campaign_dispatches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    channel VARCHAR(20) NOT NULL, -- 'SMS', 'WHATSAPP', 'EMAIL'
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    sent_at TIMESTAMPTZ,
+    error TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 26. Coupons
+CREATE TABLE coupons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    campaign_id UUID REFERENCES campaigns(id) ON DELETE SET NULL,
+    code VARCHAR(50) NOT NULL,
+    discount_type discount_type NOT NULL,
+    discount_value NUMERIC(10, 2) NOT NULL,
+    max_discount_amount NUMERIC(10, 2),
+    min_order_amount NUMERIC(10, 2),
+    scope coupon_scope NOT NULL DEFAULT 'GLOBAL',
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    usage_limit_global INTEGER,
+    usage_limit_per_customer INTEGER DEFAULT 1,
+    usage_count INTEGER NOT NULL DEFAULT 0,
+    status coupon_status NOT NULL DEFAULT 'ACTIVE',
+    activation_date TIMESTAMPTZ,
+    expiration_date TIMESTAMPTZ,
+    branch_restriction JSONB,
+    channel_restriction JSONB,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    version INTEGER NOT NULL DEFAULT 1,
+    CONSTRAINT uq_tenant_coupon_code UNIQUE (tenant_id, code)
+);
+
+-- 27. Coupon Redemptions
+CREATE TABLE coupon_redemptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    coupon_id UUID NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    discount_applied NUMERIC(10, 2) NOT NULL,
+    rolled_back BOOLEAN NOT NULL DEFAULT FALSE,
+    redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 28. Promotions (Deterministic Rule Engine)
+CREATE TABLE promotions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    conditions JSONB NOT NULL DEFAULT '[]'::jsonb,
+    discount_type discount_type NOT NULL,
+    discount_value NUMERIC(10, 2) NOT NULL,
+    max_discount_amount NUMERIC(10, 2),
+    min_order_amount NUMERIC(10, 2),
+    priority INTEGER NOT NULL DEFAULT 0,
+    stack_mode promotion_stack_mode NOT NULL DEFAULT 'BEST_DEAL',
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    channel_restriction JSONB,
+    product_restriction JSONB,
+    category_restriction JSONB,
+    usage_limit INTEGER,
+    usage_count INTEGER NOT NULL DEFAULT 0,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
+    version INTEGER NOT NULL DEFAULT 1
+);
+
+-- 29. Loyalty Programs (Tenant Configuration)
+CREATE TABLE loyalty_programs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL DEFAULT 'Loyalty Program',
+    points_display_name VARCHAR(50) NOT NULL DEFAULT 'נקודות',
+    points_per_currency_unit NUMERIC(8, 4) NOT NULL DEFAULT 1.0000,
+    currency_per_point NUMERIC(8, 4) NOT NULL DEFAULT 0.1000,
+    regular_threshold INTEGER NOT NULL DEFAULT 500, -- לקוח קבוע
+    vip_threshold INTEGER NOT NULL DEFAULT 2000,   -- לקוח VIP
+    points_expiry_days INTEGER DEFAULT 365,
+    birthday_window_days_before INTEGER NOT NULL DEFAULT 7,
+    birthday_window_days_after INTEGER NOT NULL DEFAULT 7,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    version INTEGER NOT NULL DEFAULT 1
+);
+
+-- 30. Loyalty Accounts
+CREATE TABLE loyalty_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    current_points INTEGER NOT NULL DEFAULT 0,
+    lifetime_points INTEGER NOT NULL DEFAULT 0,
+    current_tier loyalty_tier NOT NULL DEFAULT 'NEW_CUSTOMER',
+    tier_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    version INTEGER NOT NULL DEFAULT 1,
+    CONSTRAINT uq_tenant_customer_loyalty UNIQUE (tenant_id, customer_id)
+);
+
+-- 31. Loyalty Transactions
+CREATE TABLE loyalty_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    account_id UUID NOT NULL REFERENCES loyalty_accounts(id) ON DELETE CASCADE,
+    type loyalty_transaction_type NOT NULL,
+    points INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    description TEXT,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 32. Call Logs (Phase 7 Telephony & PBX Integration)
+CREATE TABLE call_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
+    call_session_id VARCHAR(100) NOT NULL,
+    caller_number VARCHAR(50) NOT NULL,
+    caller_number_raw VARCHAR(50),
+    direction call_direction NOT NULL DEFAULT 'INBOUND',
+    status call_status NOT NULL DEFAULT 'RINGING',
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    operator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    duration_seconds INTEGER NOT NULL DEFAULT 0,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    answered_at TIMESTAMPTZ,
+    ended_at TIMESTAMPTZ,
+    recording_url TEXT,
+    automated_greeting_played BOOLEAN NOT NULL DEFAULT TRUE,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_tenant_call_session UNIQUE (tenant_id, call_session_id)
+);
+
+CREATE INDEX idx_call_logs_tenant_session ON call_logs (tenant_id, call_session_id);
+CREATE INDEX idx_call_logs_tenant_caller ON call_logs (tenant_id, caller_number);
+CREATE INDEX idx_call_logs_tenant_customer ON call_logs (tenant_id, customer_id);
+CREATE INDEX idx_call_logs_tenant_started ON call_logs (tenant_id, started_at DESC);
 ```

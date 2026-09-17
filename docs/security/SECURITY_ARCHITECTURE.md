@@ -83,3 +83,15 @@ To prevent cross-tenant data corruption or IDOR tampering:
 1. **Composite Foreign Key Assertions:** Entities referencing parent tenants enforce `tenant_id` alignment at both database and application query boundaries.
 2. **Negative Boundary Validation:** If a request in Tenant A attempts to link a Vehicle or Driver belonging to Tenant B, the API immediately halts with `403 Forbidden (TENANT_BOUNDARY_VIOLATION)`.
 3. **Database RLS Policies:** Row-Level Security ensures that even in the presence of SQL injection, no cross-tenant rows can ever be selected or mutated.
+
+---
+
+## 5. Telephony Security & Israeli Wiretap Law Compliance (Phase 7)
+
+### 5.1 Israeli Regulatory Greeting & Recording Requirements
+Under Israeli Wiretap Law (חוק האזנת סתר, התשל"ט-1979) and privacy guidelines:
+1. **Automated Greeting Requirement:** Parties do not need a signed consent form, but callers must be informed via a pre-loaded automated recording played in the first seconds of the call that the conversation may be recorded for service quality assurance.
+2. **System Enforcement:** The telephony module automatically tracks `automated_greeting_played: true` when ingesting or bridging inbound calls.
+3. **Webhook Authentication:** Vendor webhooks from PBX/SIP trunks must provide valid cryptographic signatures (`x-telephony-token` or HMAC signature) matching the tenant PBX trunk configuration.
+4. **Idempotent Ingestion:** Incoming call sessions enforce unique constraints on `(tenant_id, call_session_id)` to prevent replay attacks or duplicate popups.
+
