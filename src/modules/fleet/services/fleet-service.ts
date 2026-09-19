@@ -43,6 +43,7 @@ export interface TelemetryPacket {
   headingDegrees?: number;
   batteryLevel?: number;
   recordedAt: string | Date;
+  enforceShiftCheck?: boolean;
 }
 
 export interface ITrackerAdapter {
@@ -307,6 +308,52 @@ export class FleetService {
       vehicleId = res.rows[0]?.vehicle_id || null;
     }
 
+    // PHASE 00 Section 42 & Phase 11: Fleet Telemetry Privacy
+    // Telemetry collection is restricted to active driver shifts (ON_SHIFT).
+    // Prohibit unrestricted personal tracking outside of working shifts.
+    if (vehicleId) {
+      let activeDriverAssignment: any = null;
+      if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+        activeDriverAssignment = memoryDb.find(
+          "driver_vehicle_assignments",
+          (a: any) =>
+            a.tenant_id === tenantId &&
+            a.vehicle_id === vehicleId &&
+            a.unassigned_at === null
+        )[0];
+      } else {
+        const pool = getPostgresPool();
+        const res = await pool.query(
+          `SELECT driver_id FROM driver_vehicle_assignments
+           WHERE tenant_id = $1 AND vehicle_id = $2 AND unassigned_at IS NULL LIMIT 1`,
+          [tenantId, vehicleId]
+        );
+        activeDriverAssignment = res.rows[0];
+      }
+
+      if (activeDriverAssignment) {
+        let driverRecord: any = null;
+        if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+          driverRecord =
+            memoryDb.findById("drivers", activeDriverAssignment.driver_id) ||
+            memoryDb.findById("delivery_drivers", activeDriverAssignment.driver_id);
+        } else {
+          const pool = getPostgresPool();
+          const res = await pool.query(
+            `SELECT shift_status FROM delivery_drivers WHERE id = $1 AND tenant_id = $2`,
+            [activeDriverAssignment.driver_id, tenantId]
+          );
+          driverRecord = res.rows[0];
+        }
+
+        if (driverRecord && driverRecord.shift_status === "OFF_SHIFT") {
+          throw new Error("TELEMETRY_PRIVACY_VIOLATION: Telemetry collection rejected outside active driver shift (PHASE 00 Section 42)");
+        }
+      } else if (packet.enforceShiftCheck) {
+        throw new Error("TELEMETRY_PRIVACY_VIOLATION: Telemetry collection rejected: vehicle has no active assigned driver on shift");
+      }
+    }
+
     const locationRecord = {
       id: `loc_${crypto.randomUUID()}`,
       tenant_id: tenantId,
@@ -413,6 +460,31 @@ export class FleetService {
       geofenceTriggered,
       transitionedDeliveryId,
     };
+  }
+
+  /**
+   * Purge telemetry older than retentionDays (PHASE 00 Section 42 & Phase 11)
+   * Enforces the 30-day automated range retention policy.
+   */
+  async purgeStaleTelemetry(tenantId: string, retentionDays = 30): Promise<number> {
+    const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const stale = memoryDb.find(
+        "vehicle_locations",
+        (l: any) => l.tenant_id === tenantId && new Date(l.recorded_at).getTime() < cutoff.getTime()
+      );
+      for (const record of stale) {
+        memoryDb.delete("vehicle_locations", record.id);
+      }
+      return stale.length;
+    } else {
+      const pool = getPostgresPool();
+      const res = await pool.query(
+        `DELETE FROM vehicle_locations WHERE tenant_id = $1 AND recorded_at < $2`,
+        [tenantId, cutoff.toISOString()]
+      );
+      return res.rowCount || 0;
+    }
   }
 }
 

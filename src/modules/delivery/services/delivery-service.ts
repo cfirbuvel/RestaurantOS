@@ -149,6 +149,34 @@ export class DeliveryService {
       throw new Error(`Cannot assign delivery in status ${delivery.status}`);
     }
 
+    // Validate driver does not belong to another tenant (PHASE 00 Section 32: Composite Tenant Integrity)
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const crossTenantDriver =
+        memoryDb.find(
+          "delivery_drivers",
+          (drv: any) => (drv.id === driverId || drv.user_id === driverId) && drv.tenant_id !== tenantId
+        )[0] ||
+        memoryDb.find(
+          "drivers",
+          (drv: any) => (drv.id === driverId || drv.user_id === driverId) && drv.tenant_id !== tenantId
+        )[0];
+
+      if (crossTenantDriver) {
+        throw new Error(`Driver not found or does not belong to tenant ${tenantId}`);
+      }
+    } else {
+      const pool = getPostgresPool();
+      const res = await pool.query(
+        `SELECT id FROM delivery_drivers WHERE (id = $1 OR user_id = $1) AND tenant_id != $2
+         UNION
+         SELECT id FROM drivers WHERE (id = $1 OR user_id = $1) AND tenant_id != $2 LIMIT 1`,
+        [driverId, tenantId]
+      );
+      if (res.rows.length > 0) {
+        throw new Error(`Driver not found or does not belong to tenant ${tenantId}`);
+      }
+    }
+
     const previousDriverId = delivery.driver_id || null;
     const now = new Date();
 
@@ -638,17 +666,17 @@ export class DeliveryService {
       status: delivery.status,
       priority: delivery.priority,
       deliveryAddress: {
-        street: delivery.delivery_address.street,
-        houseNumber: delivery.delivery_address.houseNumber,
-        entrance: delivery.delivery_address.entrance,
-        floor: delivery.delivery_address.floor,
-        apartment: delivery.delivery_address.apartment,
-        city: delivery.delivery_address.city,
-        gateCode: delivery.delivery_address.gateCode,
-        parkingInstructions: delivery.delivery_address.parkingInstructions,
-        deliveryNotes: delivery.delivery_address.deliveryNotes,
-        latitude: delivery.delivery_address.latitude,
-        longitude: delivery.delivery_address.longitude,
+        street: delivery.delivery_address?.street || "",
+        houseNumber: delivery.delivery_address?.houseNumber || "",
+        entrance: delivery.delivery_address?.entrance,
+        floor: delivery.delivery_address?.floor,
+        apartment: delivery.delivery_address?.apartment,
+        city: delivery.delivery_address?.city || "",
+        gateCode: delivery.delivery_address?.gateCode,
+        parkingInstructions: delivery.delivery_address?.parkingInstructions,
+        deliveryNotes: delivery.delivery_address?.deliveryNotes,
+        latitude: delivery.delivery_address?.latitude ?? 0,
+        longitude: delivery.delivery_address?.longitude ?? 0,
       },
       customerNotes: delivery.customer_notes,
       deliveryNotes: delivery.delivery_notes,

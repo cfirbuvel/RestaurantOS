@@ -31,17 +31,38 @@ export class RealtimeService {
    * Determine allowed channels for a user session based on their role and context
    * (PHASE 00 Section 29: Logical Authorization Boundaries)
    */
-  getAuthorizedChannels(role: Role, branchId: string, stationId?: string | null): string[] {
+  getAuthorizedChannels(role: Role, branchId: string, stationId?: string | null, userId?: string, tenantId?: string): string[] {
     const channels: string[] = [];
 
     switch (role) {
       case "OWNER":
       case "ADMIN":
+        channels.push(
+          `branch:${branchId}:kds:all`,
+          `branch:${branchId}:dispatch`,
+          `branch:${branchId}:admin`,
+          `branch:${branchId}:telemetry`,
+          `kds:${branchId}`,
+          `dispatch:${branchId}`,
+          `vehicle_telemetry:${branchId}`
+        );
+        if (tenantId) {
+          channels.push(`admin:${tenantId}`);
+        }
+        if (stationId) {
+          channels.push(`branch:${branchId}:kds:${stationId}`);
+        }
+        break;
+
       case "MANAGER":
         channels.push(
           `branch:${branchId}:kds:all`,
           `branch:${branchId}:dispatch`,
-          `branch:${branchId}:admin`
+          `branch:${branchId}:admin`,
+          `branch:${branchId}:telemetry`,
+          `kds:${branchId}`,
+          `dispatch:${branchId}`,
+          `vehicle_telemetry:${branchId}`
         );
         if (stationId) {
           channels.push(`branch:${branchId}:kds:${stationId}`);
@@ -49,7 +70,7 @@ export class RealtimeService {
         break;
 
       case "KITCHEN_MANAGER":
-        channels.push(`branch:${branchId}:kds:all`);
+        channels.push(`branch:${branchId}:kds:all`, `kds:${branchId}`);
         if (stationId) {
           channels.push(`branch:${branchId}:kds:${stationId}`);
         }
@@ -59,16 +80,24 @@ export class RealtimeService {
         if (stationId) {
           channels.push(`branch:${branchId}:kds:${stationId}`);
         }
-        channels.push(`branch:${branchId}:kds:all`);
+        channels.push(`branch:${branchId}:kds:all`, `kds:${branchId}`);
         break;
 
       case "DELIVERY_MANAGER":
-        channels.push(`branch:${branchId}:dispatch`);
+        channels.push(
+          `branch:${branchId}:dispatch`,
+          `dispatch:${branchId}`,
+          `branch:${branchId}:telemetry`,
+          `vehicle_telemetry:${branchId}`
+        );
         break;
 
       case "DRIVER":
         // Driver can only subscribe to their own driver channel
         channels.push(`branch:${branchId}:driver:me`);
+        if (userId) {
+          channels.push(`driver:${userId}`);
+        }
         break;
 
       default:
@@ -80,17 +109,59 @@ export class RealtimeService {
 
   /**
    * Check if a role is authorized to subscribe to a target channel
+   * (PHASE 00 Sections 28 & 29: Ephemeral Handshake & Channel Authorization)
    */
-  canAccessChannel(role: Role, branchId: string, targetChannel: string, stationId?: string | null): boolean {
-    const authorized = this.getAuthorizedChannels(role, branchId, stationId);
+  canAccessChannel(
+    role: Role,
+    branchId: string,
+    targetChannel: string,
+    stationId?: string | null,
+    userId?: string,
+    tenantId?: string
+  ): boolean {
+    const authorized = this.getAuthorizedChannels(role, branchId, stationId, userId, tenantId);
     
-    // Exact match or station-level matching
+    // Exact match
     if (authorized.includes(targetChannel)) return true;
 
     // Kitchen roles can access specific stations within their branch
     if (
       (role === "KITCHEN_EMPLOYEE" || role === "KITCHEN_MANAGER" || role === "MANAGER" || role === "ADMIN" || role === "OWNER") &&
-      targetChannel.startsWith(`branch:${branchId}:kds:`)
+      (targetChannel.startsWith(`branch:${branchId}:kds:`) || targetChannel === `kds:${branchId}`)
+    ) {
+      return true;
+    }
+
+    // Dispatch roles
+    if (
+      (role === "DELIVERY_MANAGER" || role === "MANAGER" || role === "ADMIN" || role === "OWNER") &&
+      (targetChannel === `branch:${branchId}:dispatch` || targetChannel === `dispatch:${branchId}`)
+    ) {
+      return true;
+    }
+
+    // Telemetry roles
+    if (
+      (role === "DELIVERY_MANAGER" || role === "MANAGER" || role === "ADMIN" || role === "OWNER") &&
+      (targetChannel === `branch:${branchId}:telemetry` || targetChannel === `vehicle_telemetry:${branchId}`)
+    ) {
+      return true;
+    }
+
+    // Driver boundary check: driver can only access their own driver channel
+    if (role === "DRIVER" && userId && targetChannel === `driver:${userId}`) {
+      return true;
+    }
+
+    // Public tracking channels (public_tracking:{delivery_id})
+    if (targetChannel.startsWith("public_tracking:")) {
+      return true;
+    }
+
+    // Admin channel
+    if (
+      (role === "ADMIN" || role === "OWNER") &&
+      (tenantId && targetChannel === `admin:${tenantId}`)
     ) {
       return true;
     }
@@ -112,7 +183,7 @@ export class RealtimeService {
 
     const channel = params.channel || defaultChannel;
 
-    if (!this.canAccessChannel(role, branchId, channel, stationId)) {
+    if (!this.canAccessChannel(role, branchId, channel, stationId, userId, tenantId)) {
       throw new Error(`Role ${role} is not authorized for channel ${channel}`);
     }
 

@@ -27,11 +27,37 @@ const REDACTED_KEYS = new Set([
   "pin",
   "pin_code_hash",
   "token",
+  "session_token",
+  "access_token",
+  "refresh_token",
   "secret",
+  "client_secret",
   "api_key",
+  "api_secret",
   "credit_card",
+  "card_number",
+  "pan",
   "cvv",
+  "security_code",
+  "authorization",
+  "bearer",
+  "private_key",
+  "sip_password",
 ]);
+
+function isSensitiveKey(key: string): boolean {
+  const lower = key.toLowerCase();
+  if (REDACTED_KEYS.has(lower)) return true;
+  return (
+    lower.endsWith("_secret") ||
+    lower.endsWith("_token") ||
+    lower.endsWith("_key") ||
+    lower.endsWith("_hash") ||
+    lower.includes("password") ||
+    lower.includes("cvv") ||
+    lower.includes("private_key")
+  );
+}
 
 export function sanitizeAuditData(data: any): any {
   if (!data || typeof data !== "object") return data;
@@ -39,7 +65,7 @@ export function sanitizeAuditData(data: any): any {
 
   const sanitized: Record<string, any> = {};
   for (const [key, value] of Object.entries(data)) {
-    if (REDACTED_KEYS.has(key.toLowerCase())) {
+    if (isSensitiveKey(key)) {
       sanitized[key] = "[REDACTED]";
     } else if (value && typeof value === "object") {
       sanitized[key] = sanitizeAuditData(value);
