@@ -152,6 +152,27 @@ export class BranchService {
     return rows.length > 0 ? this.mapBranchToDomain(rows[0]) : null;
   }
 
+  async listBranches(organizationId: string, restaurantId?: string): Promise<Branch[]> {
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      const rows = memoryDb.find(
+        "branches",
+        (b) => b.organization_id === organizationId && (!restaurantId || b.restaurant_id === restaurantId)
+      );
+      return rows.map((r) => this.mapBranchToDomain(r));
+    }
+
+    const pool = getPostgresPool();
+    let query = `SELECT * FROM branches WHERE organization_id = $1`;
+    const params: any[] = [organizationId];
+    if (restaurantId) {
+      query += ` AND restaurant_id = $2`;
+      params.push(restaurantId);
+    }
+    query += ` ORDER BY name ASC`;
+    const { rows } = await pool.query(query, params);
+    return rows.map((r) => this.mapBranchToDomain(r));
+  }
+
   private mapRestaurantToDomain(row: any): Restaurant {
     return {
       id: row.id,

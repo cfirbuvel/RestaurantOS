@@ -142,6 +142,33 @@ export class NotificationService {
 
     return results;
   }
+
+  private deviceTokens: Map<string, { userId: string; token: string; platform: string; updatedAt: Date }> = new Map();
+
+  async registerDeviceToken(userId: string, token: string, platform: string = "ANDROID"): Promise<void> {
+    this.deviceTokens.set(token, {
+      userId,
+      token,
+      platform,
+      updatedAt: new Date(),
+    });
+  }
+
+  async getNotifications(tenantId: string, recipientId: string, limit: number = 50): Promise<Array<NotificationPayload & { id: string; createdAt: Date; read: boolean }>> {
+    return this.inAppNotifications
+      .filter((n) => n.tenantId === tenantId && (n.recipientId === recipientId || n.recipientId === "ALL_STAFF" || n.recipientId === "MANAGERS"))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  async markAsRead(notificationId: string): Promise<boolean> {
+    const notif = this.inAppNotifications.find((n) => n.id === notificationId);
+    if (notif) {
+      notif.read = true;
+      return true;
+    }
+    return false;
+  }
 }
 
 export const notificationService = new NotificationService();

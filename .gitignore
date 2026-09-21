@@ -17,6 +17,8 @@ node_modules/
 out/
 build/
 dist/
+.expo/
+
 
 # Testing & Coverage
 coverage/

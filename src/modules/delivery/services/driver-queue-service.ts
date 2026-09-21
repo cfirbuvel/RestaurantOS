@@ -304,6 +304,72 @@ export class DriverQueueService {
       };
     });
   }
+
+  /**
+   * Get all drivers for branch with their operational status (for Manager oversight)
+   */
+  async getAllBranchDrivers(tenantId: string, branchId: string): Promise<any[]> {
+    let drivers: any[] = [];
+
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      drivers = memoryDb.find("drivers", (d: any) => {
+        return d.tenant_id === tenantId && d.branch_id === branchId && d.is_active === true;
+      });
+    } else {
+      const pool = getPostgresPool();
+      const res = await pool.query(
+        `SELECT * FROM drivers WHERE tenant_id = $1 AND branch_id = $2 AND is_active = true ORDER BY created_at ASC`,
+        [tenantId, branchId]
+      );
+      drivers = res.rows;
+    }
+
+    return drivers.map((d) => {
+      let driverName = "Driver";
+      let phone = "";
+      if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+        const user = memoryDb.findById("users", d.user_id);
+        if (user) {
+          driverName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Driver";
+          phone = user.phone || "";
+        }
+      }
+
+      // Check for current active delivery
+      let currentDeliveryId: string | null = null;
+      if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+        const activeDel = memoryDb.find("deliveries", (del: any) => {
+          return (
+            del.driver_id === d.id &&
+            ["ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY", "ARRIVED_AT_CUSTOMER_AREA"].includes(del.status)
+          );
+        })[0];
+        if (activeDel) currentDeliveryId = activeDel.id;
+      }
+
+      // Check for assigned vehicle
+      let vehicleName: string | null = null;
+      if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+        const vehicle = memoryDb.find("vehicles", (v: any) => v.driver_id === d.id && v.is_active)[0];
+        if (vehicle) vehicleName = `${vehicle.make || ""} ${vehicle.model || ""} (${vehicle.license_plate || ""})`.trim();
+      }
+
+      return {
+        id: d.id,
+        userId: d.user_id,
+        name: driverName,
+        phone,
+        shiftStatus: d.shift_status,
+        assignmentStatus: d.assignment_status,
+        tripStatus: d.trip_status,
+        availableSince: d.available_since ? new Date(d.available_since).toISOString() : null,
+        currentDeliveryId,
+        vehicleName,
+        canSelfAssign: d.can_self_assign,
+        updatedAt: d.updated_at ? new Date(d.updated_at).toISOString() : new Date().toISOString(),
+      };
+    });
+  }
 }
 
 export const driverQueueService = new DriverQueueService();

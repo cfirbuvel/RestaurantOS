@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "RestaurantOS Manager",
+    "slug": "restaurant-os-manager",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.shortech.restaurantos.manager"
+    }
+  }
+}
