@@ -8,6 +8,7 @@ export const theme = {
     bg: "#0f172a",           // Deep navy
     bgCard: "#1e293b",       // Card surface
     bgElevated: "#273549",   // Elevated elements
+    bgCardHover: "#253347",
 
     // Accents
     primary: "#3b82f6",      // Blue — primary actions
@@ -54,6 +55,7 @@ export const theme = {
   },
 
   font: {
+    xs: 11,
     sm: 13,
     md: 16,
     lg: 20,

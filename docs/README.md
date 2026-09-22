@@ -21,6 +21,7 @@ Welcome to **RestaurantOS**, an enterprise-grade, modular, multi-tenant Restaura
 | [testing/TESTING_STRATEGY.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/testing/TESTING_STRATEGY.md) | Detailed automated test specifications, race-condition suites, and manual checklists. | `Amended & Approved` |
 | [DEPLOYMENT.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/DEPLOYMENT.md) | Multi-stage Docker containers, Kubernetes topologies, CI/CD pipeline, and rollouts. | `Approved` |
 | [OPERATIONS.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/OPERATIONS.md) | Observability, health probes, Prometheus/Grafana dashboards, runbooks, and DR plans. | `Approved` |
+| [OPERATIONAL_GUIDE.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/OPERATIONAL_GUIDE.md) | Master end-to-end step-by-step operational guide: restaurant opening, KDS, dispatch, closing. | `Approved` |
 | [INTEGRATIONS.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/INTEGRATIONS.md) | Integration Hub specifications (Wolt, 10bis, Invoicing, Payments, Trackers, PBX). | `Amended & Approved` |
 | [ROADMAP.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/ROADMAP.md) | Phased implementation roadmap from Gen 1 (Human-operated) to Gen 5 (Autonomous AI). | `Amended & Approved` |
 | [IMPLEMENTATION_STATUS.md](file:///f:/Developing/Web/ShorTech/RestaurantOS/docs/IMPLEMENTATION_STATUS.md) | Master traceability matrix tracking module completion, test pass rates, and security sign-off. | `Amended (Phase 0 Ready)` |
