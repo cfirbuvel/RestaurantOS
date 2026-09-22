@@ -25,7 +25,12 @@ export async function GET(req: NextRequest) {
   }
 
   const status = url.searchParams.get("status") as any;
-  const deliveries = await deliveryService.listDeliveries(tenantId, branchId, status);
+  const driverId = url.searchParams.get("driverId");
+  let deliveries = await deliveryService.listDeliveries(tenantId, branchId, status);
+
+  if (driverId) {
+    deliveries = deliveries.filter((d) => d.driver_id === driverId);
+  }
 
   // If driver role, minimize data (PHASE 00 Section 31)
   if (auth.session.role === "DRIVER") {

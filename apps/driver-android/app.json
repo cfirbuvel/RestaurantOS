@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "RestaurantOS Driver",
+    "slug": "restaurant-os-driver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.shortech.restaurantos.driver",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.shortech.restaurantos.driver",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Used for confirming your location at delivery arrival and completion.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Used for confirming your location at delivery arrival and completion."
+      }
+    },
+    "platforms": ["android", "ios"]
+  }
+}
