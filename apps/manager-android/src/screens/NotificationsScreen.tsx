@@ -6,12 +6,21 @@ import { useI18n } from "../core/i18n/i18n-context";
 import { mobileApiClient } from "../core/network/mobile-api-client";
 import { Card } from "../components/Card";
 import { ActionButton } from "../components/ActionButton";
-import { Bell, AlertTriangle, RefreshCw } from "lucide-react-native";
+import { Bell, AlertTriangle, RefreshCw, CheckCheck } from "lucide-react-native";
+import { DeepLinkResolver } from "../../../../src/shared/deep-linking/deep-link-resolver";
+import { NotificationType, NotificationPriority } from "../../../../src/shared/contracts/notifications";
 
 export interface MobileNotification {
   id: string;
   title: string;
   body: string;
+  type?: NotificationType;
+  priority?: NotificationPriority;
+  targetEntity?: {
+    type: string;
+    id: string;
+  };
+  deepLink?: string;
   data?: any;
   createdAt: string;
   read: boolean;
@@ -38,8 +47,12 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
             id: n.id,
             title: n.title,
             body: n.body,
+            type: n.type,
+            priority: n.priority,
+            targetEntity: n.targetEntity,
+            deepLink: n.deepLink,
             data: n.data,
-            createdAt: n.createdAt || new Date().toISOString(),
+            createdAt: n.timestamp || n.createdAt || new Date().toISOString(),
             read: Boolean(n.read),
           }))
         );
@@ -55,7 +68,45 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
     fetchNotifications();
   }, [activeBranch?.id]);
 
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await mobileApiClient.patch(`/api/v1/notifications/${notificationId}/read`, {});
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      );
+    } catch (err) {
+      console.warn("Failed to mark notification read:", err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await mobileApiClient.post(`/api/v1/notifications/mark-all-read`, {
+        branchId: activeBranch?.id,
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.warn("Failed to mark all read:", err);
+    }
+  };
+
   const handleActionClick = (notif: MobileNotification) => {
+    // 1. Mark as read
+    markAsRead(notif.id);
+
+    // 2. Resolve deep link if present
+    if (notif.deepLink && DeepLinkResolver.isValid(notif.deepLink)) {
+      try {
+        const parsed = DeepLinkResolver.parse(notif.deepLink);
+        const resolved = DeepLinkResolver.toManagerAppRoute(parsed);
+        onNavigateTab(resolved.tab, resolved.entityId);
+        return;
+      } catch (err) {
+        console.warn("Deep link parse failed, falling back:", err);
+      }
+    }
+
+    // 3. Fallback resolution
     if (notif.data?.actionRoute) {
       onNavigateTab(notif.data.actionRoute, notif.data?.targetId);
     } else if (notif.title.toLowerCase().includes("delivery")) {
@@ -66,6 +117,8 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
       onNavigateTab("orders");
     }
   };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <ScrollView
@@ -88,30 +141,69 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
             marginBottom: spacing.md,
           }}
         >
-          <Text
-            style={{
-              fontSize: typography.titleMedium.fontSize,
-              fontWeight: "700",
-              color: colors.textPrimary,
-            }}
-          >
-            {t("notificationsTitle")} ({notifications.length})
-          </Text>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={fetchNotifications}
-            disabled={isLoading}
-            style={{
-              backgroundColor: colors.surfaceElevated,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-              borderRadius: borderRadius.md,
-              paddingHorizontal: spacing.sm,
-              paddingVertical: spacing.xs,
-            }}
-          >
-            <RefreshCw size={14} color={colors.textSecondary} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: spacing.sm }}>
+            <Text
+              style={{
+                fontSize: typography.titleMedium.fontSize,
+                fontWeight: "700",
+                color: colors.textPrimary,
+              }}
+            >
+              {t("notificationsTitle")} ({notifications.length})
+            </Text>
+            {unreadCount > 0 && (
+              <View
+                style={{
+                  backgroundColor: colors.brand,
+                  borderRadius: borderRadius.full,
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#000" }}>
+                  {unreadCount} {t("unread") || "חדשות"}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={{ flexDirection: "row", gap: spacing.xs }}>
+            {unreadCount > 0 && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleMarkAllRead}
+                style={{
+                  backgroundColor: colors.surfaceElevated,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  borderRadius: borderRadius.md,
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: spacing.xs,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <CheckCheck size={14} color={colors.textSecondary} />
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>סמן הכל כנקרא</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={fetchNotifications}
+              disabled={isLoading}
+              style={{
+                backgroundColor: colors.surfaceElevated,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+                borderRadius: borderRadius.md,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.xs,
+              }}
+            >
+              <RefreshCw size={14} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {isLoading ? (
@@ -129,6 +221,8 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
           <View style={{ gap: spacing.sm }}>
             {notifications.map((notif) => {
               const isAlert =
+                notif.priority === "CRITICAL" ||
+                notif.priority === "HIGH" ||
                 notif.title.toLowerCase().includes("overdue") ||
                 notif.title.toLowerCase().includes("breach") ||
                 notif.title.toLowerCase().includes("alert");
@@ -138,9 +232,10 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
                   key={notif.id}
                   elevated={!notif.read}
                   style={{
-                    borderLeftWidth: isAlert ? 4 : 0,
-                    borderLeftColor: isAlert ? colors.status.critical : "transparent",
+                    borderLeftWidth: isAlert ? 4 : notif.read ? 0 : 3,
+                    borderLeftColor: isAlert ? colors.status.critical : colors.brand,
                     gap: spacing.sm,
+                    opacity: notif.read ? 0.75 : 1.0,
                   }}
                 >
                   <View
@@ -183,11 +278,11 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onNavi
 
                   <View style={{ flexDirection: isRTL ? "row" : "row-reverse", paddingTop: spacing.xs }}>
                     <ActionButton
-                      variant="outline"
+                      variant={notif.read ? "outline" : "primary"}
                       size="sm"
                       onClick={() => handleActionClick(notif)}
                     >
-                      {t("openItem")}
+                      {t("openItem") || "צפה בפרטים"}
                     </ActionButton>
                   </View>
                 </Card>

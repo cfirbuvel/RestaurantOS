@@ -61,7 +61,12 @@ const DriverAppContent: React.FC = () => {
           />
         );
       case "notifications":
-        return <NotificationsScreen onBack={() => setCurrentScreen("home")} />;
+        return (
+          <NotificationsScreen
+            onBack={() => setCurrentScreen("home")}
+            onNavigate={(screen) => setCurrentScreen(screen as NavTarget)}
+          />
+        );
       case "settings":
         return <SettingsScreen onBack={() => setCurrentScreen("home")} />;
       default:

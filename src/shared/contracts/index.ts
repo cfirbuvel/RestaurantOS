@@ -11,3 +11,5 @@ export * from "./delivery";
 export * from "./fleet";
 export * from "./kds";
 export * from "./realtime";
+export * from "./notifications";
+export * from "./deep-linking";

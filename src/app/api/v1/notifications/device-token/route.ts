@@ -26,3 +26,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message || "Failed to register device token" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const auth = await resolveAuthContext(req.headers);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const token = url.searchParams.get("token");
+    if (!token) {
+      return NextResponse.json({ error: "Device token is required in query params" }, { status: 400 });
+    }
+
+    const success = await notificationService.revokeDeviceToken(token);
+    return NextResponse.json({ success, message: success ? "Device token revoked" : "Token not found" });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Failed to revoke device token" }, { status: 500 });
+  }
+}
