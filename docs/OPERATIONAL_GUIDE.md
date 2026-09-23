@@ -328,6 +328,206 @@ Shift Managers monitor live KPIs on the Manager Android App dashboard:
 
 ---
 
+## 🛠️ Developer & QA — Complete System Testing Guide
+
+This section provides the complete step-by-step procedure to boot the **entire RestaurantOS system** locally for end-to-end testing, including the Next.js web platform, both Android mobile apps, the KDS kitchen display, and the live operational simulator.
+
+### Prerequisites
+
+Before starting, verify these tools are installed:
+
+| Tool | Purpose | Install Command / Check |
+|:---|:---|:---|
+| **Node.js** ≥ 18.x | Runtime for Next.js and scripts | `node --version` |
+| **npm** ≥ 9.x | Package manager | `npm --version` |
+| **Expo CLI** | React Native mobile dev server | `npx expo --version` |
+| **Android Studio** | Android emulator (optional) | Open Android Studio → AVD Manager |
+| **tsx** | TypeScript script runner | `npx tsx --version` (auto-installed) |
+| **PowerShell** 5.1+ | Automation scripts (Windows) | `$PSVersionTable.PSVersion` |
+
+### Install Dependencies (First Time Only)
+
+```powershell
+# Root project (Next.js web + API)
+cd f:\Developing\Web\ShorTech\RestaurantOS
+npm install
+
+# Manager Android App
+cd apps\manager-android
+npm install
+
+# Driver Android App
+cd ..\driver-android
+npm install
+
+# Return to root
+cd ..\..
+```
+
+---
+
+### Option A: 1-Click Full System Startup (Recommended)
+
+The `start-all.ps1` script boots all system surfaces in parallel:
+
+```powershell
+# Web mode (default) — opens mobile apps in browser for fast testing
+.\scripts\start-all.ps1
+
+# Android emulator mode — requires Android Studio AVD running
+.\scripts\start-all.ps1 -MobileTarget emulator
+
+# QR code mode — scan with Expo Go on a physical Android phone
+.\scripts\start-all.ps1 -MobileTarget qr
+
+# Full system with live simulator attached
+.\scripts\start-all.ps1 -WithSimulator
+```
+
+After running, the following surfaces will be available:
+
+| Surface | URL / Access | Port |
+|:---|:---|:---|
+| 🌐 **Web Management Portal** | [http://localhost:3000](http://localhost:3000) | 3000 |
+| 🍳 **Kitchen Display (KDS)** | [http://localhost:3000/kds/branch_dizengoff](http://localhost:3000/kds/branch_dizengoff) | 3000 |
+| 📱 **Manager Android App** | [http://localhost:8081](http://localhost:8081) or Android emulator | 8081 |
+| 🚗 **Driver Android App** | [http://localhost:8082](http://localhost:8082) or Android emulator | 8082 |
+
+---
+
+### Option B: Manual Step-by-Step Startup
+
+If you prefer to start each surface individually (useful for debugging a specific surface):
+
+**Terminal 1 — Next.js Web & API Server:**
+```powershell
+cd f:\Developing\Web\ShorTech\RestaurantOS
+npm run dev
+# → Web portal:  http://localhost:3000
+# → KDS:         http://localhost:3000/kds/branch_dizengoff
+# → API:         http://localhost:3000/api/v1/...
+```
+
+**Terminal 2 — Manager Android App:**
+```powershell
+cd f:\Developing\Web\ShorTech\RestaurantOS\apps\manager-android
+
+# Web preview (fastest, no emulator needed)
+npx expo start --web --port 8081
+
+# OR: Android emulator (must have AVD running in Android Studio)
+npx expo start --android
+
+# OR: QR code for physical device with Expo Go
+npx expo start
+```
+
+**Terminal 3 — Driver Android App:**
+```powershell
+cd f:\Developing\Web\ShorTech\RestaurantOS\apps\driver-android
+
+# Web preview
+npx expo start --web --port 8082
+
+# OR: Android emulator
+npx expo start --android
+
+# OR: QR code
+npx expo start
+```
+
+---
+
+### Android Emulator Setup (Optional — For Native Testing)
+
+To test on a real Android emulator instead of web preview:
+
+1. **Open Android Studio** → Tools → Device Manager (AVD Manager)
+2. **Create Virtual Device** if none exists:
+   - Choose **Pixel 6** or **Pixel 7** hardware profile
+   - Select a system image (API 33+ recommended)
+   - Name it (e.g., `Pixel_6_API_33`)
+3. **Launch the emulator** — click the green ▶ play button on the AVD
+4. **Wait** until the emulator fully boots to the Android home screen
+5. Run the mobile apps with `--android` flag:
+   ```powershell
+   # In Terminal 2
+   cd apps\manager-android && npx expo start --android
+
+   # In Terminal 3
+   cd apps\driver-android && npx expo start --android
+   ```
+6. Expo will automatically install and launch the app on the running emulator
+
+> **Tip:** You can run two emulators simultaneously for Manager + Driver by creating two AVDs in Android Studio and launching both before running the Expo commands.
+
+---
+
+### Running the Live System Simulator
+
+The simulator executes a complete operational lifecycle through the real service layer — creating orders, routing to KDS, dispatching deliveries, and confirming proof of delivery.
+
+```powershell
+# Default speed (1x — real-time pacing)
+npm run simulate:live
+
+# Fast mode (5x speed — completes in ~15 seconds)
+npx tsx scripts/simulate-live.ts --speed=5
+
+# Slow mode for step-by-step observation
+npx tsx scripts/simulate-live.ts --speed=0.5
+```
+
+**What the simulator does:**
+
+| Step | Action | Surfaces Affected |
+|:---|:---|:---|
+| 1 | 3 couriers clock in to FIFO queue | Driver App, Manager Dashboard |
+| 2 | 2 orders arrive (Web + Wolt webhook) | Web Portal, Manager App |
+| 3 | KDS tickets created, cooking, and bumped | KDS Station Display |
+| 4 | Courier self-assigns delivery from queue | Driver App, Dispatch Engine |
+| 5 | GPS breadcrumbs along Dizengoff Street | Fleet Telemetry, Manager Map |
+| 6 | Proof of delivery + courier returns to queue | Driver App, Order Lifecycle |
+| 7 | Manager dashboard shows live metrics | Manager App Dashboard |
+
+> **Important:** The simulator runs against the **in-memory database** and real service modules. The Next.js dev server (`npm run dev`) must be running first for SSE/WebSocket events to propagate to KDS and mobile app surfaces.
+
+---
+
+### Full System Test Checklist
+
+Once all surfaces are running, validate these key flows:
+
+```markdown
+### 🧪 End-to-End Verification
+- [ ] Web portal loads at http://localhost:3000
+- [ ] KDS station rail loads at http://localhost:3000/kds/branch_dizengoff
+- [ ] Manager app loads and shows Hebrew RTL layout
+- [ ] Driver app loads and shows login/PIN screen
+- [ ] Run `npm run simulate:live` and observe events across all surfaces
+- [ ] Verify KDS tickets appear and can be bumped
+- [ ] Verify delivery assignments in Manager dashboard
+- [ ] Verify driver queue updates in real-time
+- [ ] Check offline banner appears when network disconnects
+- [ ] Confirm Hebrew text renders correctly (RTL direction)
+```
+
+---
+
+### Troubleshooting
+
+| Problem | Solution |
+|:---|:---|
+| `npm run dev` fails with port in use | Kill existing process: `npx kill-port 3000` |
+| Expo says "Metro bundler not found" | Run `npm install` inside the specific app directory |
+| Android emulator not detected | Ensure AVD is running in Android Studio before `expo start --android` |
+| `@restaurantos/shared-mobile` import errors | Verify `metro.config.js` has correct `watchFolders` path |
+| KDS not receiving live events | Ensure Next.js dev server is running on port 3000 |
+| Simulator errors on missing modules | Run `npm install` in root, then `npm run dev` first |
+| CORS errors in browser console | Mobile apps in web mode may need `--host` flag for cross-origin |
+
+---
+
 ## 📋 Daily Operational Checklist (Quick Reference)
 
 ```markdown
