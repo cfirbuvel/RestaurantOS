@@ -121,6 +121,16 @@ export class RestaurantOSClient {
   private isNetworkOnline: boolean = true;
 
   constructor(config: ClientConfig) {
+    const resolvedFetch =
+      config.fetchFn ||
+      (typeof window !== "undefined" && typeof window.fetch === "function"
+        ? window.fetch.bind(window)
+        : typeof globalThis !== "undefined" && typeof globalThis.fetch === "function"
+        ? globalThis.fetch.bind(globalThis)
+        : typeof fetch === "function"
+        ? fetch
+        : undefined);
+
     this.config = {
       baseUrl: config.baseUrl.replace(/\/$/, ""),
       clientType: config.clientType,
@@ -133,7 +143,7 @@ export class RestaurantOSClient {
       maxRetries: config.maxRetries ?? 3,
       retryDelayMs: config.retryDelayMs ?? 300,
       onUnauthorized: config.onUnauthorized,
-      fetchFn: config.fetchFn || (typeof fetch !== "undefined" ? fetch : (globalThis as any).fetch),
+      fetchFn: resolvedFetch as any,
       enableLogging: config.enableLogging ?? false,
     };
   }
@@ -305,8 +315,10 @@ export class RestaurantOSClient {
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         let response: Response;
+        const fetchImpl = this.config.fetchFn;
+        const globalScope = typeof window !== "undefined" ? window : globalThis;
         try {
-          response = await this.config.fetchFn(url, {
+          response = await fetchImpl.call(globalScope, url, {
             method,
             headers,
             body: options?.body ? JSON.stringify(options.body) : undefined,
