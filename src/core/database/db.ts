@@ -61,6 +61,17 @@ export class MemoryDatabase {
       is_active: true,
     });
 
+    this.insert("branches", {
+      id: "branch_dizengoff",
+      organization_id: orgId,
+      restaurant_id: restId,
+      name: "סניף דיזנגוף (Dizengoff Branch)",
+      slug: "branch_dizengoff",
+      address: { street: "דיזנגוף 100", city: "תל אביב" },
+      operational_settings: { currency: "ILS", timezone: "Asia/Jerusalem" },
+      is_active: true,
+    });
+
     this.insert("users", {
       id: userId,
       email: "owner@restotest.co.il",
@@ -87,6 +98,15 @@ export class MemoryDatabase {
       branch_id: branchId,
       role: "OWNER",
       is_primary: true,
+    });
+
+    this.insert("user_branch_assignments", {
+      user_id: userId,
+      organization_id: orgId,
+      restaurant_id: restId,
+      branch_id: "branch_dizengoff",
+      role: "OWNER",
+      is_primary: false,
     });
 
     // ── Phase 2 Seed Data: CRM ──

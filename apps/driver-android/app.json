@@ -31,6 +31,6 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Used for confirming your location at delivery arrival and completion."
       }
     },
-    "platforms": ["android", "ios"]
+    "platforms": ["android", "ios", "web"]
   }
 }

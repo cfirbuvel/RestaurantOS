@@ -6,9 +6,9 @@ import { rateLimiter } from "@/core/security/rate-limiter";
 import { memoryDb, getPostgresPool } from "@/core/database/db";
 
 const pinLoginSchema = z.object({
-  userId: z.string().uuid().optional(),
+  userId: z.string().min(1).optional(),
   pin: z.string().regex(/^\d{4,6}$/, "PIN must be 4 to 6 digits"),
-  branchId: z.string().uuid().optional(),
+  branchId: z.string().min(1).optional(),
 });
 
 export async function POST(req: NextRequest) {

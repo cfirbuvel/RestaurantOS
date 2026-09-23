@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.shortech.restaurantos.manager"
-    }
+    },
+    "platforms": ["android", "ios", "web"]
   }
 }

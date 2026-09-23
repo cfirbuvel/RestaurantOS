@@ -562,6 +562,10 @@ export class AuthService {
           const orgRole = await this.resolvePrimaryOrgAndRole(userId, branch.organization_id);
           return { orgId: branch.organization_id, role: orgRole.role };
         }
+        const userOrg = await this.resolvePrimaryOrgAndRole(userId);
+        if (userOrg.role !== "VIEWER") {
+          return userOrg;
+        }
         return { role: "VIEWER" };
       }
       return { orgId: assignments[0].organization_id, role: assignments[0].role as Role };
@@ -577,6 +581,10 @@ export class AuthService {
       const branchRes = await pool.query("SELECT organization_id FROM branches WHERE id = $1", [branchId]);
       if (branchRes.rows.length > 0) {
         return this.resolvePrimaryOrgAndRole(userId, branchRes.rows[0].organization_id);
+      }
+      const userOrg = await this.resolvePrimaryOrgAndRole(userId);
+      if (userOrg.role !== "VIEWER") {
+        return userOrg;
       }
       return { role: "VIEWER" };
     }
