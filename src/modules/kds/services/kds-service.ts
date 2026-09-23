@@ -629,6 +629,36 @@ export class KDSService {
     }
   }
 
+  async getTicketById(tenantId: string, ticketId: string): Promise<KDSTicket | null> {
+    const raw = await this.getTicketRaw(tenantId, ticketId);
+    if (!raw) return null;
+
+    let items: KDSTicketItem[] = [];
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
+      items = memoryDb.find(
+        "kds_ticket_items",
+        (i: any) => i.ticket_id === ticketId && i.tenant_id === tenantId
+      ) as KDSTicketItem[];
+    } else {
+      const pool = getPostgresPool();
+      const itemRes = await pool.query(
+        `SELECT * FROM kds_ticket_items WHERE ticket_id = $1 AND tenant_id = $2`,
+        [ticketId, tenantId]
+      );
+      items = itemRes.rows;
+    }
+
+    const sla = computeKDSSLA(raw.created_at, 15, new Date());
+    return {
+      ...raw,
+      items,
+      sla_status: sla.slaStatus,
+      elapsed_seconds: sla.elapsedSeconds,
+      remaining_seconds: sla.remainingSeconds,
+      formatted_timer: sla.formattedTimer,
+    };
+  }
+
   private async getTicketRaw(tenantId: string, ticketId: string): Promise<KDSTicket | null> {
     if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
       const t = memoryDb.findById("kds_tickets", ticketId);

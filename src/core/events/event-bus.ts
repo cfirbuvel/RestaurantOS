@@ -28,11 +28,30 @@ export class EventBus {
   /**
    * Subscribe an in-process handler for an event type
    */
-  subscribe<T = any>(eventType: string, handler: EventHandler<T>) {
+  subscribe<T = any>(eventType: string, handler: EventHandler<T>): () => void {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, []);
     }
     this.handlers.get(eventType)!.push(handler as EventHandler);
+
+    return () => {
+      this.unsubscribe(eventType, handler as EventHandler);
+    };
+  }
+
+  /**
+   * Unsubscribe an in-process handler
+   */
+  unsubscribe<T = any>(eventType: string, handler: EventHandler<T>): void {
+    const list = this.handlers.get(eventType);
+    if (!list) return;
+    const idx = list.indexOf(handler as EventHandler);
+    if (idx !== -1) {
+      list.splice(idx, 1);
+    }
+    if (list.length === 0) {
+      this.handlers.delete(eventType);
+    }
   }
 
   /**
