@@ -1,57 +1,68 @@
-// ─── Driver App Theme ─────────────────────────────────────────────────────────
-// Dark, high-contrast design optimised for outdoor use and glanceability.
-// Large tap targets (min 48dp), bold status colours.
+/**
+ * Driver App Theme
+ * 
+ * [PHASE 18 MIGRATION SHIM]
+ * Connected to @restaurantos/shared-mobile canonical design system.
+ * See docs/MOBILE_DESIGN_SYSTEM.md for migration tracking.
+ */
+
+import {
+  colors as sharedColors,
+  spacing as sharedSpacing,
+  borderRadius as sharedRadius,
+  touchTargets,
+} from "@restaurantos/shared-mobile";
 
 export const theme = {
   colors: {
-    // Backgrounds
-    bg: "#0f172a",           // Deep navy
-    bgCard: "#1e293b",       // Card surface
-    bgElevated: "#273549",   // Elevated elements
-    bgCardHover: "#253347",
+    // Backgrounds & Surface
+    bg: sharedColors.background,
+    bgCard: sharedColors.surface,
+    bgElevated: sharedColors.surfaceElevated,
+    bgCardHover: sharedColors.surfaceHighlight,
 
-    // Accents
-    primary: "#3b82f6",      // Blue — primary actions
-    primaryDark: "#2563eb",
-    success: "#22c55e",      // Green — available / complete
+    // Interactive & Brand Accents
+    primary: sharedColors.brandSecondary,
+    primaryDark: sharedColors.brandSecondaryDark,
+    success: sharedColors.status.ready,
     successDark: "#16a34a",
-    warning: "#f59e0b",      // Amber — in-progress / break
-    warningDark: "#d97706",
-    danger: "#ef4444",       // Red — clock-out / release
+    warning: sharedColors.brand,
+    warningDark: sharedColors.brandHover,
+    danger: sharedColors.button.dangerBg,
     dangerDark: "#dc2626",
-    muted: "#475569",        // Disabled
+    muted: sharedColors.status.unavailable,
 
-    // Text
-    text: "#f8fafc",
-    textSecondary: "#94a3b8",
-    textMuted: "#64748b",
+    // Typography
+    text: sharedColors.textPrimary,
+    textSecondary: sharedColors.textSecondary,
+    textMuted: sharedColors.textMuted,
 
     // Status badges
-    statusOff: "#374151",
-    statusOn: "#065f46",
-    statusBreak: "#78350f",
-    statusAvailable: "#064e3b",
-    statusAssigned: "#1e3a5f",
+    statusOff: sharedColors.status.offShift,
+    statusOn: sharedColors.status.onShift,
+    statusBreak: sharedColors.status.onBreak,
+    statusAvailable: sharedColors.status.available,
+    statusAssigned: sharedColors.status.assigned,
 
     // Borders
-    border: "#334155",
-    borderLight: "#1e293b",
+    border: sharedColors.border,
+    borderLight: sharedColors.borderLight,
   },
 
   spacing: {
-    xs: 4,
-    sm: 8,
+    xs: sharedSpacing.xs,
+    sm: sharedSpacing.sm,
     md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
+    lg: sharedSpacing.xl,
+    xl: sharedSpacing.xxl,
+    xxl: sharedSpacing.xxxl,
   },
 
   radius: {
-    sm: 8,
-    md: 12,
-    lg: 16,
-    pill: 50,
+    sm: sharedRadius.sm,
+    md: sharedRadius.md,
+    lg: sharedRadius.lg,
+    pill: sharedRadius.pill,
   },
 
   font: {
@@ -63,8 +74,7 @@ export const theme = {
     xxl: 32,
   },
 
-  // 48dp minimum touch target (WCAG / Material Design)
-  minTouchTarget: 48,
+  minTouchTarget: touchTargets.min,
 };
 
 export type Theme = typeof theme;

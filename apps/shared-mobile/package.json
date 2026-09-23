@@ -1,0 +1,13 @@
+{
+  "name": "@restaurantos/shared-mobile",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "peerDependencies": {
+    "lucide-react-native": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-svg": "*"
+  }
+}

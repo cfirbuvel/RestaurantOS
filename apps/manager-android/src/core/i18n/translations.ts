@@ -126,6 +126,7 @@ export const translations = {
     // Notifications
     notificationsTitle: "מרכז התראות",
     markAllRead: "סמן הכל כנקרא",
+    unread: "חדשות",
     openItem: "פתח פריט",
     noNotifications: "אין התראות חדשות",
 
@@ -246,6 +247,7 @@ export const translations = {
 
     notificationsTitle: "Notification Center",
     markAllRead: "Mark All as Read",
+    unread: "Unread",
     openItem: "Open",
     noNotifications: "No notifications",
 

@@ -15,10 +15,11 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// 3. Map @/shared to monorepo src/shared
+// 3. Map modules
 config.resolver.extraNodeModules = {
   '@/shared': path.resolve(workspaceRoot, 'src/shared'),
   '@': path.resolve(workspaceRoot, 'src'),
+  '@restaurantos/shared-mobile': path.resolve(workspaceRoot, 'apps/shared-mobile/src'),
 };
 
 module.exports = config;

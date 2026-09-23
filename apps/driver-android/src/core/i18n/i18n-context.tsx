@@ -1,41 +1,40 @@
-import React, { createContext, useContext, useState } from "react";
-import { I18nManager } from "react-native";
+/**
+ * [PHASE 18 MIGRATION SHIM]
+ * Connected to @restaurantos/shared-mobile I18nProvider with native RTL enforcement.
+ */
+
+import React from "react";
+import {
+  I18nProvider as SharedI18nProvider,
+  useI18n as useSharedI18n,
+  SupportedLocale,
+} from "@restaurantos/shared-mobile";
 import { translations, Language } from "./translations";
 
-interface I18nContextType {
+export interface I18nContextType {
   language: Language;
   t: (key: string) => string;
   setLanguage: (lang: Language) => void;
   isRTL: boolean;
 }
 
-const I18nContext = createContext<I18nContextType | null>(null);
-
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLang] = useState<Language>("he");
-
-  const setLanguage = (lang: Language) => {
-    setLang(lang);
-    const shouldBeRTL = lang === "he";
-    if (I18nManager.isRTL !== shouldBeRTL) {
-      I18nManager.allowRTL(shouldBeRTL);
-      I18nManager.forceRTL(shouldBeRTL);
-    }
-  };
-
-  const t = (key: string): string => {
-    return translations[language][key] ?? key;
-  };
-
   return (
-    <I18nContext.Provider value={{ language, t, setLanguage, isRTL: language === "he" }}>
+    <SharedI18nProvider
+      translations={translations as any}
+      initialLocale="he"
+    >
       {children}
-    </I18nContext.Provider>
+    </SharedI18nProvider>
   );
 };
 
 export const useI18n = (): I18nContextType => {
-  const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error("useI18n must be used inside I18nProvider");
-  return ctx;
+  const shared = useSharedI18n();
+  return {
+    language: shared.locale as Language,
+    t: shared.t,
+    setLanguage: shared.setLocale as (l: Language) => void,
+    isRTL: shared.isRTL,
+  };
 };
